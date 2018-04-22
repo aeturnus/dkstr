@@ -26,6 +26,7 @@ module neu(
     reg [3:0]   weight;
     reg [15:0]  cost;
     reg [2:0]   dir;
+    reg [2:0]   state;
 
     assign path_cost = cost;
     assign path_dir  = dir;
@@ -36,32 +37,37 @@ module neu(
     // combinational regs
     // compute new costs to travel to this node
     // based on the costs to travel to surrounding nodes
-    reg [15:0]  adj_costs[0:7];
+    reg [15:0]  adj_cost;
+    reg [15:0]  travel_cost;
     reg [15:0]  new_cost;
     reg [3:0]   new_dir;
-    reg         changed; assign path_mod  = changed;
+    reg         changed;
+    // can potentially change while handling each neighbor
+    // only the last one matters with the changed wire
+    assign path_mod  = state == 7 ? changed : 1;
+
     integer     i;
     always @(*) begin
-        adj_costs[0] = n_cost  + (weight << 1) + PERP;
-        adj_costs[1] = ne_cost + (weight << 1) + DIAG;
-        adj_costs[2] = e_cost  + (weight << 1) + PERP;
-        adj_costs[3] = se_cost + (weight << 1) + DIAG;
-        adj_costs[4] = s_cost  + (weight << 1) + PERP;
-        adj_costs[5] = sw_cost + (weight << 1) + DIAG;
-        adj_costs[6] = w_cost  + (weight << 1) + PERP;
-        adj_costs[7] = nw_cost + (weight << 1) + DIAG;
+        case (state)
+        0: adj_cost = n_cost;
+        1: adj_cost = ne_cost;
+        2: adj_cost = e_cost;
+        3: adj_cost = se_cost;
+        4: adj_cost = s_cost;
+        5: adj_cost = sw_cost;
+        6: adj_cost = w_cost;
+        7: adj_cost = nw_cost;
+        endcase
+        travel_cost = adj_cost + (weight << 1) + (state[0] ? DIAG : PERP);
 
         // defaults
         new_cost = cost;
         new_dir  = dir;
-        changed = 0;
-
-        for (i = 0; i < 7; i = i + 1) begin
-            if (adj_costs[i] < cost) begin
-                new_cost = adj_costs[i];
-                new_dir  = i;
-                changed = 1;
-            end
+        changed  = 0;
+        if (travel_cost < new_cost) begin
+            new_cost = travel_cost;
+            new_dir  = state;
+            changed = 1;
         end
     end
 
@@ -70,11 +76,13 @@ module neu(
         if (accessible) begin
             cost <= new_cost;
             dir  <= new_dir;
+            state <= state + 1;
         end
 
         if (rst) begin
             cost <= 16'hFFFF;
             dir <= 0;
+            state <= 0;
         end
         if (clr) begin
             cost <= 0;
