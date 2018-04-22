@@ -1,0 +1,13 @@
+*.runs/
+*.cache/
+*.vcd
+webtalk/
+hw_1/
+bin/
+work/
+*.mti
+*.wlf
+*.iver
+
+#windows garbage
+*.bak
