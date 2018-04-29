@@ -40,7 +40,7 @@ module neu(
     reg [11:0]  adj_cost;
     reg [11:0]  travel_cost;
     reg [11:0]  new_cost;
-    reg [3:0]   new_dir;
+    reg [2:0]   new_dir;
     reg         changed;
 
     // outside observer keeps track on how many changes are occuring
