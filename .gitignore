@@ -11,3 +11,6 @@ work/
 
 #windows garbage
 *.bak
+
+#tags files
+.tags
