@@ -90,27 +90,30 @@ module mem(
     reg [31:0] wr_data;
 
     always @(posedge clk) begin
-        data_rdy <= 0;
         case (cs)
         0: begin
             data_rdy <= 1;
             if (req_rd) begin
                 rd_addr <= ((addr_rd - 32'h40000000) >> 2);
                 cs <= 1;
+                data_rdy <= 0;
             end
             else if (req_wr) begin
                 wr_addr <= ((addr_wr - 32'h40002000) >> 2);
                 wr_data <= data_wr;
                 cs <= 2;
+                data_rdy <= 0;
             end
         end
         1: begin
             data_rd <= chip0[rd_addr];
             cs <= 0;
+            data_rdy <= 1;
         end
         2: begin
             chip1[rd_addr] <= wr_data;
             cs <= 0;
+            data_rdy <= 1;
         end
         endcase
     end
