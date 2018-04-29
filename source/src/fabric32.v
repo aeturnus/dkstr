@@ -34,6 +34,8 @@ module fabric32(
     localparam ST_W_FIRST_LOAD  = 2;
     localparam ST_LOAD_WEIGHT   = 3;
     localparam ST_W_LOAD        = 4;
+    localparam ST_RUNNING       = 5;
+    localparam ST_PACK_DIR      = 6;
 
     // visble registers
     reg [4:0] reg_start_x;
@@ -42,16 +44,18 @@ module fabric32(
     reg reg_run;
     assign ctrl_out = {reg_run, reg_load, 20'd0, reg_start_y, reg_start_x};
 
-    reg rst_n;
-    wire rst; assign rst = !rst_n;
+    wire rst;
 
     // fabric variables
-    reg clr[0:1023];
-    reg ld[0:1023];
+    reg [1023:0] clr;
+    reg [1023:0] ld;
     reg [3:0] ld_weight;
-    wire mod[0:1023];
+    wire [1023:0] mod;
     wire [11:0] cost[0:1023];
     wire [2:0] dir[0:1023];
+
+    wire activity;
+    assign activity = |mod;
 
     reg [3:0] cs;
     reg [3:0] ns;
@@ -61,13 +65,13 @@ module fabric32(
     reg [9:0] curr;         // current node
     reg [6:0] addr_off;     // word address offset
     reg [31:0] data_word;   // data word to read/pass
+    reg [15:0] history;
 
     wire [31:0] addr_rd, addr_wr;
     assign addr_rd = ADDR_MAP + (addr_off << 2);
     assign addr_wr = ADDR_DIR + (addr_off << 2);
 
     // SM outputs
-    reg o_rst_n;            // enables running: works in the run states
     reg o_clr_curr;         // clear the curr register
     reg o_clr_addr_off;     // clear the addr_off register
     reg o_init_rd;          // initialize a read
@@ -76,19 +80,22 @@ module fabric32(
     reg o_ld_weight;        // load the weight in the node pointed by curr
     reg o_inc_curr;         // increment the curr register
     reg o_clr_load_map;     // clear the load map register
+    reg o_rst; assign rst = o_rst;// resets the nodes
+    reg o_clr_his;          // clears the history
 
     // SM qualifiers
     wire q_load_map; assign q_load_map = reg_load;
-    wire q_run; assign q_load_map = reg_run;
+    wire q_run; assign q_run = reg_run;
     wire q_data_done; assign q_data_done = txn_rdy;
     wire q_curr_0; assign q_curr_0 = (curr == 0);
     wire q_curr_mod8_last; assign q_curr_mod8_last = (curr[2:0] == 3'b111);
+    wire q_activity; assign q_activity = (history != 0);
 
     // state combinational logic
     integer i;
     always @(*) begin
         ns = cs;
-        o_rst_n = 0;
+        o_rst = 0;
         o_clr_curr = 0;
         o_clr_addr_off = 0;
         o_init_rd = 0;
@@ -97,6 +104,7 @@ module fabric32(
         o_ld_weight = 0;
         o_inc_curr = 0;
         o_clr_load_map = 0;
+        o_clr_his = 0;
 
         // state logic
         case (cs)
@@ -108,7 +116,9 @@ module fabric32(
                 ns = ST_FIRST_LOAD;
             end
             else if (q_run) begin
-                ns = ST_IDLE;   // TODO
+                ns = ST_RUNNING;
+                o_rst = 1;
+                o_clr_his = 1;
             end
         end
 
@@ -150,6 +160,21 @@ module fabric32(
                 ns = ST_IDLE;
                 o_clr_load_map = 1;
             end
+        end
+
+        ST_RUNNING: begin
+            if (q_activity) begin
+                ns = ST_RUNNING;
+            end
+            else begin
+                ns = ST_PACK_DIR;
+                o_clr_curr = 1;
+                o_clr_addr_off = 1;
+            end
+        end
+
+        ST_PACK_DIR: begin
+            ns = ST_PACK_DIR;
         end
 
         endcase
@@ -256,6 +281,13 @@ module fabric32(
 
             if (o_clr_load_map) begin
                 reg_load <= 0;
+            end
+
+            if (o_clr_his) begin
+                history <= 16'hffff;
+            end
+            else begin
+                history <= {history[14:0], activity};
             end
 
         end

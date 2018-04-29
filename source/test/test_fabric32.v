@@ -55,7 +55,8 @@ module test_fabric32();
         ctrl_wr = 0;
 
         //#100;
-        #20000;
+        //#20000;
+        #100000;
         // should have populated already
 
         $finish();
