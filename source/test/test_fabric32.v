@@ -5,14 +5,13 @@ module test_fabric32();
 
     always #5 clk = ~clk;
 
-    wire req_rd, req_wr, data_rdy;
-    wire [31:0] addr_wr, addr_rd, data_wr, data_rd;
+    wire req, wr, data_rdy;
+    wire [31:0] addr, data_wr, data_rd;
     mem memory(
             .clk(clk),
-            .req_rd(req_rd),
-            .req_wr(req_wr),
-            .addr_wr(addr_wr),
-            .addr_rd(addr_rd),
+            .req(req),
+            .wr(wr),
+            .addr(addr),
             .data_wr(data_wr),
             .data_rd(data_rd),
             .data_rdy(data_rdy)
@@ -30,13 +29,12 @@ module test_fabric32();
             .ctrl_in(ctrl_in),
             .ctrl_out(ctrl_out),
 
-            .req_rd(req_rd),
-            .req_wr(req_wr),
-            .addr_wr(addr_wr),
-            .addr_rd(addr_rd),
-            .data_wr(data_wr),
-            .data_rd(data_rd),
-            .data_rdy(data_rdy),
+            .txn_req(req),
+            .txn_wr(wr),
+            .txn_addr(addr),
+            .txn_wdata(data_wr),
+            .txn_rdata(data_rd),
+            .txn_rdy(data_rdy),
 
             .int_done(int_done)
         );
@@ -57,7 +55,8 @@ module test_fabric32();
         ctrl_wr = 0;
 
         //#100;
-        #200;
+        #20000;
+        // should have populated already
 
         $finish();
     end
@@ -66,13 +65,12 @@ endmodule
 
 module mem(
         input   wire    clk,
-        input   wire    req_rd,
-        input   wire    req_wr,
-        input   wire [31:0] addr_wr,
-        input   wire [31:0] addr_rd,
+        input   wire    req,
+        input   wire    wr,
+        input   wire [31:0] addr,
         input   wire [31:0] data_wr,
         output  reg  [31:0] data_rd,
-        output  reg     data_rdy
+        output  reg         data_rdy
     );
 
     reg [31:0] chip0[0:127];
@@ -93,13 +91,13 @@ module mem(
         case (cs)
         0: begin
             data_rdy <= 1;
-            if (req_rd) begin
-                rd_addr <= ((addr_rd - 32'h40000000) >> 2);
+            if (req && !wr) begin
+                rd_addr <= ((addr - 32'h40000000) >> 2);
                 cs <= 1;
                 data_rdy <= 0;
             end
-            else if (req_wr) begin
-                wr_addr <= ((addr_wr - 32'h40002000) >> 2);
+            else if (req && wr) begin
+                wr_addr <= ((addr - 32'h40002000) >> 2);
                 wr_data <= data_wr;
                 cs <= 2;
                 data_rdy <= 0;

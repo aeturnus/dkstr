@@ -14,18 +14,14 @@ module fabric32(
         output  wire    [31:0]  ctrl_out,
 
         // memory interface
-        input                   data_rdy,
-        input   wire    [31:0]  data_rd,
-        output  wire    [31:0]  data_wr,
-
-        output  wire    [31:0]  addr_rd,
-        output  wire    [31:0]  addr_wr,
-
-        output  wire    req_rd,
-        output  wire    req_wr,
+        input                   txn_rdy,
+        input   wire    [31:0]  txn_rdata,
+        output  wire    [31:0]  txn_wdata,
+        output  reg     [31:0]  txn_addr,
+        output  reg             txn_req,
+        output  reg             txn_wr,
 
         // interrupts
-        output  wire    int_load,
         output  wire    int_done
     );
     // params
@@ -66,6 +62,7 @@ module fabric32(
     reg [6:0] addr_off;     // word address offset
     reg [31:0] data_word;   // data word to read/pass
 
+    wire [31:0] addr_rd, addr_wr;
     assign addr_rd = ADDR_MAP + (addr_off << 2);
     assign addr_wr = ADDR_DIR + (addr_off << 2);
 
@@ -73,7 +70,7 @@ module fabric32(
     reg o_rst_n;            // enables running: works in the run states
     reg o_clr_curr;         // clear the curr register
     reg o_clr_addr_off;     // clear the addr_off register
-    reg o_init_rd; assign req_rd = o_init_rd; // initialize a read
+    reg o_init_rd;          // initialize a read
     reg o_inc_addr_off;     // increment the word addr offset
     reg o_sv_word;          // save the data word from a read request
     reg o_ld_weight;        // load the weight in the node pointed by curr
@@ -83,7 +80,7 @@ module fabric32(
     // SM qualifiers
     wire q_load_map; assign q_load_map = reg_load;
     wire q_run; assign q_load_map = reg_run;
-    wire q_data_done; assign q_data_done = data_rdy;
+    wire q_data_done; assign q_data_done = txn_rdy;
     wire q_curr_0; assign q_curr_0 = (curr == 0);
     wire q_curr_mod8_last; assign q_curr_mod8_last = (curr[2:0] == 3'b111);
 
@@ -177,6 +174,25 @@ module fabric32(
         6: ld_weight = data_word[27:24];
         7: ld_weight = data_word[31:28];
         endcase
+
+        if (o_init_rd) begin
+            txn_addr = addr_rd;
+            txn_req = 1;
+            txn_wr = 0;
+        end
+        /*
+        else if (o_init_wr) begin
+            txn_addr = addr_wr;
+            txn_req = 1;
+            txn_wr = 1;
+        end
+        */
+        else begin
+            txn_addr = addr_rd;
+            txn_req = 0;
+            txn_wr = 0;
+        end
+
     end
 
     // sequential logic
@@ -218,7 +234,7 @@ module fabric32(
                 addr_off <= addr_off + 1;
             end
             if (o_sv_word) begin
-                data_word <= data_rd;
+                data_word <= txn_rdata;
             end
 
             if (o_inc_curr) begin
