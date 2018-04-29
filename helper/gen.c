@@ -30,7 +30,8 @@ int main(int argc, char * argv[])
     for (int r = 0; r < h; ++r) {
         for (int c = 0; c < w; ++c) {
             int num = calc_off(r,c);
-            fprintf(f,"neu neu%d(", num);
+            fprintf(f,"neu #(%d, %d) neu%d(", c, r, num);
+            //fprintf(f,"neu neu%d(", num);
             fprintf(f,".clk(clk),");
             fprintf(f,".rst(rst),");
             fprintf(f,".clr(clr[%d]),", num);

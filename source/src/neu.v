@@ -1,5 +1,6 @@
 // node execution unit
-module neu(
+module neu #(parameter x=0, parameter y=0)
+    (
         input   wire        clk,
         input   wire        rst,    // resets cost
         input   wire        clr,    // set the cost to 0
@@ -65,10 +66,11 @@ module neu(
         new_cost = cost;
         new_dir  = dir;
         changed  = 0;
-        if (travel_cost < new_cost) begin
+        if (travel_cost < cost) begin
             new_cost = travel_cost;
             new_dir  = state;
             changed = 1;
+            $display("[%2d,%2d] travel: %d, current: %d", x, y, travel_cost, cost);
         end
     end
 
