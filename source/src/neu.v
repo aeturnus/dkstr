@@ -42,9 +42,10 @@ module neu(
     reg [11:0]  new_cost;
     reg [3:0]   new_dir;
     reg         changed;
-    // can potentially change while handling each neighbor
-    // only the last one matters with the changed wire
-    assign path_mod  = state == 7 ? changed : 1;
+
+    // outside observer keeps track on how many changes are occuring
+    // before determining that it is complete
+    assign path_mod = changed;
 
     integer     i;
     always @(*) begin
@@ -73,12 +74,6 @@ module neu(
 
     always @(posedge clk) begin
         // every clock cycle, update cost if node is accessible
-        if (accessible) begin
-            cost <= new_cost;
-            dir  <= new_dir;
-            state <= state + 1;
-        end
-
         if (rst) begin
             cost <= 12'hFFF;
             dir <= 0;
@@ -90,6 +85,12 @@ module neu(
         end
         if (ld) begin
             weight <= ld_weight;
+        end
+
+        if (!(rst || clr || ld) && accessible) begin
+            cost <= new_cost;
+            dir  <= new_dir;
+            state <= state + 1;
         end
     end
 
