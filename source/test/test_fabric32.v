@@ -51,6 +51,14 @@ module test_fabric32();
         ctrl_in = 0;
         #10;
 
+        ctrl_wr = 1;
+        ctrl_in = {1'd1, 1'd1, 20'd0, 5'd0, 5'd0};
+        #10;
+        ctrl_wr = 0;
+
+        //#100;
+        #200;
+
         $finish();
     end
 
@@ -75,50 +83,34 @@ module mem(
 
     initial begin
         $readmemh("mem.hex", chip0);
-        cs <= 0;
+        cs = 0;
     end
-
-    reg o_sv;
     reg [31:0] rd_addr;
     reg [31:0] wr_addr;
     reg [31:0] wr_data;
-    always @(*) begin
-        data_rdy = 0;
-        o_sv = 0;
 
+    always @(posedge clk) begin
+        data_rdy <= 0;
         case (cs)
         0: begin
-            data_rdy = 1;
+            data_rdy <= 1;
             if (req_rd) begin
-                ns = 1; // read
-                o_sv = 1;
+                rd_addr <= ((addr_rd - 32'h40000000) >> 2);
+                cs <= 1;
             end
             else if (req_wr) begin
-                ns = 2; // write
-                o_sv = 1;
+                wr_addr <= ((addr_wr - 32'h40002000) >> 2);
+                wr_data <= data_wr;
+                cs <= 2;
             end
         end
-
-        1: ns = 0;
-        2: ns = 0;
-        endcase
-    end
-
-    always @(clk) begin
-        cs <= ns;
-
-        if (o_sv) begin
-            rd_addr <= ((addr_rd - 32'h4000000) >> 2);
-            wr_addr <= ((addr_wr - 32'h4002000) >> 2);
-            wr_data <= data_wr;
-        end
-
-        case (cs)
         1: begin
             data_rd <= chip0[rd_addr];
+            cs <= 0;
         end
         2: begin
             chip1[rd_addr] <= wr_data;
+            cs <= 0;
         end
         endcase
     end
