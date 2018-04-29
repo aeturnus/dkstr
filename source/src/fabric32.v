@@ -62,7 +62,7 @@ module fabric32(
 
     // internal registers
     reg [4:0] curr_x, curr_y;     // current coordinates, for writing and reading
-    reg [11:0] curr;        // current node
+    reg [9:0] curr;         // current node
     reg [6:0] addr_off;     // word address offset
     reg [31:0] data_word;   // data word to read/pass
 
@@ -87,7 +87,7 @@ module fabric32(
     wire q_curr_0; assign q_curr_0 = (curr == 0);
     wire q_curr_mod8_last; assign q_curr_mod8_last = (curr[2:0] == 3'b111);
 
-    // combinational logic
+    // state combinational logic
     integer i;
     always @(*) begin
         ns = cs;
@@ -100,24 +100,6 @@ module fabric32(
         o_ld_weight = 0;
         o_inc_curr = 0;
         o_clr_load_map = 0;
-
-        // default ld and clr signals
-        for (i = 0; i < 1024; i = i + 1) begin
-            ld[i] = 0;
-            clr[i] = 0;
-        end
-        if (o_ld_weight) ld[curr] = 1;
-        if (reg_run) clr[reg_start_x + (reg_start_y << 5)] = 1;
-        case (curr[2:0])
-        0: ld_weight = data_word[3:0];
-        1: ld_weight = data_word[7:4];
-        2: ld_weight = data_word[11:8];
-        3: ld_weight = data_word[15:12];
-        4: ld_weight = data_word[19:16];
-        5: ld_weight = data_word[23:20];
-        6: ld_weight = data_word[27:24];
-        7: ld_weight = data_word[31:28];
-        endcase
 
         // state logic
         case (cs)
@@ -173,6 +155,27 @@ module fabric32(
             end
         end
 
+        endcase
+    end
+
+    // other combination signals
+    always @(*) begin
+        // default ld and clr signals
+        for (i = 0; i < 1024; i = i + 1) begin
+            ld[i] = 0;
+            clr[i] = 0;
+        end
+        if (o_ld_weight) ld[curr] = 1;
+        if (reg_run) clr[reg_start_x + (reg_start_y << 5)] = 1;
+        case (curr[2:0])
+        0: ld_weight = data_word[3:0];
+        1: ld_weight = data_word[7:4];
+        2: ld_weight = data_word[11:8];
+        3: ld_weight = data_word[15:12];
+        4: ld_weight = data_word[19:16];
+        5: ld_weight = data_word[23:20];
+        6: ld_weight = data_word[27:24];
+        7: ld_weight = data_word[31:28];
         endcase
     end
 
