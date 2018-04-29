@@ -7,24 +7,24 @@ module neu(
 
         input   wire [3:0]  ld_weight,  // weight of 4'b1111 is inaccesible
 
-        input   wire [15:0] n_cost,
-        input   wire [15:0] ne_cost,
-        input   wire [15:0] e_cost,
-        input   wire [15:0] se_cost,
-        input   wire [15:0] s_cost,
-        input   wire [15:0] sw_cost,
-        input   wire [15:0] w_cost,
-        input   wire [15:0] nw_cost,
+        input   wire [11:0] n_cost,
+        input   wire [11:0] ne_cost,
+        input   wire [11:0] e_cost,
+        input   wire [11:0] se_cost,
+        input   wire [11:0] s_cost,
+        input   wire [11:0] sw_cost,
+        input   wire [11:0] w_cost,
+        input   wire [11:0] nw_cost,
 
         output  wire        path_mod,    // high if a change has occurred
-        output  wire [15:0] path_cost,
+        output  wire [11:0] path_cost,
         output  wire [2:0]  path_dir
     );
     localparam  PERP = 2'b10;
     localparam  DIAG = 2'b11;
 
     reg [3:0]   weight;
-    reg [15:0]  cost;
+    reg [11:0]  cost;
     reg [2:0]   dir;
     reg [2:0]   state;
 
@@ -37,9 +37,9 @@ module neu(
     // combinational regs
     // compute new costs to travel to this node
     // based on the costs to travel to surrounding nodes
-    reg [15:0]  adj_cost;
-    reg [15:0]  travel_cost;
-    reg [15:0]  new_cost;
+    reg [11:0]  adj_cost;
+    reg [11:0]  travel_cost;
+    reg [11:0]  new_cost;
     reg [3:0]   new_dir;
     reg         changed;
     // can potentially change while handling each neighbor
@@ -80,7 +80,7 @@ module neu(
         end
 
         if (rst) begin
-            cost <= 16'hFFFF;
+            cost <= 12'hFFF;
             dir <= 0;
             state <= 0;
         end
