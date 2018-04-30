@@ -8,6 +8,8 @@
 
 #define MAX_WEIGHT   15
 
+#define NUM_WEIGHTS_PROBS   4
+
 map_t* generate_map(int rows, int cols) {
 
     // initialize the map struct
@@ -19,11 +21,33 @@ map_t* generate_map(int rows, int cols) {
     // seed the random number generator
     srand(MAP_SEED);
 
-    // generate random weights for each cell in the map
-    for (int i = 0; i < rows*cols; i++) {
-        map->buffer[i] = rand() % (MAX_WEIGHT+1);
+    // generate weighted random weights for each cell in the map
+    // 40% for 0, 20% for 1, 30% for MAX_WEIGHT, 10% total for 2 to (MAX_WEIGHT-1)
+    // sum = 96 + 48 + 72 + 24 = 240
+    int weight_sum = 240;
+    int vals[MAX_WEIGHT+1] = { 0, 1, MAX_WEIGHT };
+    double weights_probs[NUM_WEIGHTS_PROBS] = { 0.4, 0.2, 0.3, 0.1 };
+    int weighted_vals[NUM_WEIGHTS_PROBS] = { (int)(weights_probs[0] * weight_sum), 
+                                             (int)(weights_probs[1] * weight_sum), 
+                                             (int)(weights_probs[2] * weight_sum), 
+                                             (int)(weights_probs[3] * weight_sum) };
+    for (int buffer_i = 0; buffer_i < rows*cols; buffer_i++) {
+        int rand_weight_sum = rand() % weight_sum;
+        int weight_i;
+        for (weight_i = 0; weight_i < NUM_WEIGHTS_PROBS; weight_i++) {
+            if (rand_weight_sum < weighted_vals[weight_i]) {
+                break;
+            }
+            rand_weight_sum -= weighted_vals[weight_i];
+        }
+        if (weight_i < NUM_WEIGHTS_PROBS-1) {
+            map->buffer[buffer_i] = vals[weight_i];
+        } else {
+            map->buffer[buffer_i] = (rand() % 13) + 2; // TODO: fix this b/c it's hardcoded but really 
+                                                       //       this whole weighted random number generation logic is hardcoded
+        }
     }
-    
+
     return map;
 }
 
@@ -63,15 +87,15 @@ void delete_loc(loc_t* loc) {
 }
 
 int main(void) {
-    
+
     map_t* map = generate_map(32, 32);
     loc_t* start_loc = get_empty_loc(map);
     loc_t* end_loc = get_empty_loc(map);
-    
+
     print_map(map);
     printf("start location (row, col): (%d, %d)\n", start_loc->r, start_loc->c);
     printf("end location (row, col): (%d, %d)\n", end_loc->r, end_loc->c);
-    
+
     delete_map(map);
     delete_loc(start_loc);
     delete_loc(end_loc);
