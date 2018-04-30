@@ -54,7 +54,7 @@ module fabric32(
     reg [3:0] ld_weight;
     wire [1023:0] mod;
     wire [11:0] cost[0:1023];
-    wire [2:0] dir[0:1023];
+    wire [3:0] dir[0:1023];
 
     wire activity;
     assign activity = |mod;
@@ -69,7 +69,8 @@ module fabric32(
     reg [31:0] data_word;   // data word to read/pass
     reg [15:0] history;
     wire [3:0] curr_dir;
-    assign curr_dir = {1'b0, dir[curr]};
+    //assign curr_dir = {1'b0, dir[curr]};
+    assign curr_dir = dir[curr];
     assign txn_wdata = data_word;
 
     wire [31:0] addr_rd, addr_wr;

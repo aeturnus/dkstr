@@ -19,14 +19,14 @@ module neu #(parameter x=0, parameter y=0)
 
         output  wire        path_mod,    // high if a change has occurred
         output  wire [11:0] path_cost,
-        output  wire [2:0]  path_dir
+        output  wire [3:0]  path_dir
     );
     localparam  PERP = 2'b10;
     localparam  DIAG = 2'b11;
 
     reg [3:0]   weight;
     reg [11:0]  cost;
-    reg [2:0]   dir;
+    reg [3:0]   dir;
     reg [2:0]   state;
 
     assign path_cost = cost;
@@ -41,7 +41,7 @@ module neu #(parameter x=0, parameter y=0)
     reg [11:0]  adj_cost;
     reg [12:0]  travel_cost;
     reg [11:0]  new_cost;
-    reg [2:0]   new_dir;
+    reg [3:0]   new_dir;
     reg         changed;
 
     // outside observer keeps track on how many changes are occuring
@@ -68,7 +68,7 @@ module neu #(parameter x=0, parameter y=0)
         changed  = 0;
         if (!travel_cost[12] && travel_cost[11:0] < cost) begin
             new_cost = travel_cost[11:0];
-            new_dir  = state;
+            new_dir  = {1'b1,state};
             changed = 1;
             /*
             $display("[%2d,%2d] travel: %0d.%0d, current: %0d.%0d", x, y,

@@ -20,12 +20,12 @@ int main(int argc, char * argv[])
     int max = w * h - 1;
     fprintf(f,"wire clk;\n");
     fprintf(f,"wire rst;\n");
-    fprintf(f,"wire clr[0:%d];\n", max);
-    fprintf(f,"wire ld[0:%d];\n", max);
+    fprintf(f,"wire [0:%d]clr;\n", max);
+    fprintf(f,"wire [0:%d]ld;\n", max);
     fprintf(f,"wire [3:0] ld_weight;\n");
-    fprintf(f,"wire mod[0:%d];\n", max);
+    fprintf(f,"wire [0:%d]mod;\n", max);
     fprintf(f,"wire [11:0] cost[0:%d];\n", max);
-    fprintf(f,"wire [2:0] dir[0:%d];\n", max);
+    fprintf(f,"wire [3:0] dir[0:%d];\n", max);
     fprintf(f,"\n");
     for (int r = 0; r < h; ++r) {
         for (int c = 0; c < w; ++c) {

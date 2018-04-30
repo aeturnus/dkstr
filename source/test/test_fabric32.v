@@ -69,14 +69,14 @@ module test_fabric32();
         */
         ///*
         for (i = 0; i < 128; i = i + 1) begin
-            $display("[%4d]: dir=%0d", 0 + i*8, memory.chip1[i][3:0]);
-            $display("[%4d]: dir=%0d", 1 + i*8, memory.chip1[i][7:4]);
-            $display("[%4d]: dir=%0d", 2 + i*8, memory.chip1[i][11:8]);
-            $display("[%4d]: dir=%0d", 3 + i*8, memory.chip1[i][15:12]);
-            $display("[%4d]: dir=%0d", 4 + i*8, memory.chip1[i][19:16]);
-            $display("[%4d]: dir=%0d", 5 + i*8, memory.chip1[i][23:20]);
-            $display("[%4d]: dir=%0d", 6 + i*8, memory.chip1[i][27:24]);
-            $display("[%4d]: dir=%0d", 7 + i*8, memory.chip1[i][31:28]);
+            $display("[%4d]: dir=0x%0x", 0 + i*8, memory.chip1[i][3:0]);
+            $display("[%4d]: dir=0x%0x", 1 + i*8, memory.chip1[i][7:4]);
+            $display("[%4d]: dir=0x%0x", 2 + i*8, memory.chip1[i][11:8]);
+            $display("[%4d]: dir=0x%0x", 3 + i*8, memory.chip1[i][15:12]);
+            $display("[%4d]: dir=0x%0x", 4 + i*8, memory.chip1[i][19:16]);
+            $display("[%4d]: dir=0x%0x", 5 + i*8, memory.chip1[i][23:20]);
+            $display("[%4d]: dir=0x%0x", 6 + i*8, memory.chip1[i][27:24]);
+            $display("[%4d]: dir=0x%0x", 7 + i*8, memory.chip1[i][31:28]);
         end
         //*/
 
