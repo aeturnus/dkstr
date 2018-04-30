@@ -1,3 +1,5 @@
+`timescale 1ns/1ns
+
 module test_fabric32();
 
     reg clk;
@@ -39,7 +41,7 @@ module test_fabric32();
             .int_done(int_done)
         );
 
-    integer i;
+    integer i,j;
     always begin
         $dumpfile("wave_fabric32.vcd");
         $dumpvars(0, test_fabric32);
@@ -56,8 +58,27 @@ module test_fabric32();
 
         //#100;
         //#20000;
-        #100000;
+        #30000;
+        //#100000;
         // should have populated already
+
+        /*
+        for (i = 0; i < 1024; i = i + 1) begin
+            $display("[%4d]: path_mod=%0d", i, fabric.mod[i]);
+        end
+        */
+        ///*
+        for (i = 0; i < 128; i = i + 1) begin
+            $display("[%4d]: dir=%0d", 0 + i*8, memory.chip1[i][3:0]);
+            $display("[%4d]: dir=%0d", 1 + i*8, memory.chip1[i][7:4]);
+            $display("[%4d]: dir=%0d", 2 + i*8, memory.chip1[i][11:8]);
+            $display("[%4d]: dir=%0d", 3 + i*8, memory.chip1[i][15:12]);
+            $display("[%4d]: dir=%0d", 4 + i*8, memory.chip1[i][19:16]);
+            $display("[%4d]: dir=%0d", 5 + i*8, memory.chip1[i][23:20]);
+            $display("[%4d]: dir=%0d", 6 + i*8, memory.chip1[i][27:24]);
+            $display("[%4d]: dir=%0d", 7 + i*8, memory.chip1[i][31:28]);
+        end
+        //*/
 
         $finish();
     end
@@ -110,7 +131,7 @@ module mem(
             data_rdy <= 1;
         end
         2: begin
-            chip1[rd_addr] <= wr_data;
+            chip1[wr_addr] <= wr_data;
             cs <= 0;
             data_rdy <= 1;
         end

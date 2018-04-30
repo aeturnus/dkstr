@@ -36,6 +36,8 @@ module fabric32(
     localparam ST_W_LOAD        = 4;
     localparam ST_RUNNING       = 5;
     localparam ST_PACK_DIR      = 6;
+    localparam ST_W_WRITE       = 7;
+    localparam ST_W_LAST_WRITE  = 8;
 
     // visble registers
     reg [4:0] reg_start_x;
@@ -60,12 +62,15 @@ module fabric32(
     reg [3:0] cs;
     reg [3:0] ns;
 
-    // internal registers
+    // internal registers and signals
     reg [4:0] curr_x, curr_y;     // current coordinates, for writing and reading
     reg [9:0] curr;         // current node
     reg [6:0] addr_off;     // word address offset
     reg [31:0] data_word;   // data word to read/pass
     reg [15:0] history;
+    wire [3:0] curr_dir;
+    assign curr_dir = {1'b0, dir[curr]};
+    assign txn_wdata = data_word;
 
     wire [31:0] addr_rd, addr_wr;
     assign addr_rd = ADDR_MAP + (addr_off << 2);
@@ -82,6 +87,10 @@ module fabric32(
     reg o_clr_load_map;     // clear the load map register
     reg o_rst; assign rst = o_rst;// resets the nodes
     reg o_clr_his;          // clears the history
+    reg o_up_word;          // updates the data word based on first 3 bits of curr
+    reg o_init_wr;          //
+    reg o_clr_run;          // clears the run register
+    reg o_int_done; assign int_done = o_int_done;
 
     // SM qualifiers
     wire q_load_map; assign q_load_map = reg_load;
@@ -105,6 +114,10 @@ module fabric32(
         o_inc_curr = 0;
         o_clr_load_map = 0;
         o_clr_his = 0;
+        o_up_word = 0;
+        o_init_wr = 0;
+        o_clr_run = 0;
+        o_int_done = 0;
 
         // state logic
         case (cs)
@@ -174,7 +187,35 @@ module fabric32(
         end
 
         ST_PACK_DIR: begin
-            ns = ST_PACK_DIR;
+            ns = q_curr_mod8_last ? ST_W_WRITE : ST_PACK_DIR;
+            o_up_word = 1;
+            o_inc_curr = 1;
+        end
+
+        ST_W_WRITE: begin
+            if (!q_data_done) begin
+                ns = ST_W_WRITE;
+            end
+            else if (!q_curr_0) begin
+                ns = ST_PACK_DIR;
+                o_inc_addr_off = 1;
+                o_init_wr = 1;
+            end
+            else begin
+                ns = ST_W_LAST_WRITE;
+                o_init_wr = 1;
+            end
+        end
+
+        ST_W_LAST_WRITE: begin
+            if (!q_data_done) begin
+                ns = ST_W_LAST_WRITE;
+            end
+            else begin
+                ns = ST_IDLE;
+                o_clr_run = 1;
+                o_int_done = 1;
+            end
         end
 
         endcase
@@ -205,13 +246,11 @@ module fabric32(
             txn_req = 1;
             txn_wr = 0;
         end
-        /*
         else if (o_init_wr) begin
             txn_addr = addr_wr;
             txn_req = 1;
             txn_wr = 1;
         end
-        */
         else begin
             txn_addr = addr_rd;
             txn_req = 0;
@@ -283,11 +322,28 @@ module fabric32(
                 reg_load <= 0;
             end
 
+            if (o_clr_run) begin
+                reg_run <= 0;
+            end
+
             if (o_clr_his) begin
                 history <= 16'hffff;
             end
             else begin
                 history <= {history[14:0], activity};
+            end
+
+            if (o_up_word) begin
+                case (curr[2:0])
+                0: data_word[3:0] <= curr_dir;
+                1: data_word[7:4] <= curr_dir;
+                2: data_word[11:8] <= curr_dir;
+                3: data_word[15:12] <= curr_dir;
+                4: data_word[19:16] <= curr_dir;
+                5: data_word[23:20] <= curr_dir;
+                6: data_word[27:24] <= curr_dir;
+                7: data_word[31:28] <= curr_dir;
+                endcase
             end
 
         end
