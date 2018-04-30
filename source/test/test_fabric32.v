@@ -57,29 +57,19 @@ module test_fabric32();
         #10;
         ctrl_wr = 0;
 
-        //#100;
-        //#20000;
-        #30000;
-        //#100000;
-        // should have populated already
+        // run until completion
+        @(posedge int_done);
+        #10000;
 
-        /*
-        for (i = 0; i < 1024; i = i + 1) begin
-            $display("[%4d]: path_mod=%0d", i, fabric.mod[i]);
-        end
-        */
-        /*
-        for (i = 0; i < 128; i = i + 1) begin
-            $display("[%4d]: dir=0x%0x", 0 + i*8, memory.chip1[i][3:0]);
-            $display("[%4d]: dir=0x%0x", 1 + i*8, memory.chip1[i][7:4]);
-            $display("[%4d]: dir=0x%0x", 2 + i*8, memory.chip1[i][11:8]);
-            $display("[%4d]: dir=0x%0x", 3 + i*8, memory.chip1[i][15:12]);
-            $display("[%4d]: dir=0x%0x", 4 + i*8, memory.chip1[i][19:16]);
-            $display("[%4d]: dir=0x%0x", 5 + i*8, memory.chip1[i][23:20]);
-            $display("[%4d]: dir=0x%0x", 6 + i*8, memory.chip1[i][27:24]);
-            $display("[%4d]: dir=0x%0x", 7 + i*8, memory.chip1[i][31:28]);
-        end
-        */
+        ctrl_in = {1'd1, 1'd0, 20'd0, 5'd1, 5'd1};
+        ctrl_wr = 1;
+        #10;
+        ctrl_wr = 0;
+
+        @(posedge int_done);
+        #10000;
+
+
         f = $fopen("paths.hex","w");
         $fdisplay(f, "%08x", fabric.reg_start_x);
         $fdisplay(f, "%08x", fabric.reg_start_y);
@@ -115,7 +105,9 @@ module mem(
     reg [31:0] rd_addr;
     reg [31:0] wr_addr;
     reg [31:0] wr_data;
+    reg [4:0] cnt;
 
+    localparam CNT = 4;
     always @(posedge clk) begin
         case (cs)
         0: begin
@@ -124,23 +116,39 @@ module mem(
                 rd_addr <= ((addr - 32'h40000000) >> 2);
                 cs <= 1;
                 data_rdy <= 0;
+                cnt <= CNT;
             end
             else if (req && wr) begin
                 wr_addr <= ((addr - 32'h40002000) >> 2);
                 wr_data <= data_wr;
                 cs <= 2;
                 data_rdy <= 0;
+                cnt <= CNT;
             end
         end
         1: begin
-            data_rd <= chip0[rd_addr];
-            cs <= 0;
-            data_rdy <= 1;
+            if (cnt != 0) begin
+                cs <= 1;
+                data_rdy <= 0;
+                cnt <= cnt - 1;
+            end
+            else begin
+                data_rd <= chip0[rd_addr];
+                cs <= 0;
+                data_rdy <= 1;
+            end
         end
         2: begin
-            chip1[wr_addr] <= wr_data;
-            cs <= 0;
-            data_rdy <= 1;
+            if (cnt != 0) begin
+                cs <= 2;
+                data_rdy <= 0;
+                cnt <= cnt - 1;
+            end
+            else begin
+                chip1[wr_addr] <= wr_data;
+                cs <= 0;
+                data_rdy <= 1;
+            end
         end
         endcase
     end
