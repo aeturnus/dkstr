@@ -41,7 +41,7 @@ module test_fabric32();
             .int_done(int_done)
         );
 
-    integer i,j;
+    integer i,j,f;
     always begin
         $dumpfile("wave_fabric32.vcd");
         $dumpvars(0, test_fabric32);
@@ -52,7 +52,8 @@ module test_fabric32();
         #10;
 
         ctrl_wr = 1;
-        ctrl_in = {1'd1, 1'd1, 20'd0, 5'd0, 5'd0};
+        //ctrl_in = {1'd1, 1'd1, 20'd0, 5'd0, 5'd0};
+        ctrl_in = {1'd1, 1'd1, 20'd0, 5'd1, 5'd1};
         #10;
         ctrl_wr = 0;
 
@@ -67,7 +68,7 @@ module test_fabric32();
             $display("[%4d]: path_mod=%0d", i, fabric.mod[i]);
         end
         */
-        ///*
+        /*
         for (i = 0; i < 128; i = i + 1) begin
             $display("[%4d]: dir=0x%0x", 0 + i*8, memory.chip1[i][3:0]);
             $display("[%4d]: dir=0x%0x", 1 + i*8, memory.chip1[i][7:4]);
@@ -78,7 +79,13 @@ module test_fabric32();
             $display("[%4d]: dir=0x%0x", 6 + i*8, memory.chip1[i][27:24]);
             $display("[%4d]: dir=0x%0x", 7 + i*8, memory.chip1[i][31:28]);
         end
-        //*/
+        */
+        f = $fopen("paths.hex","w");
+        $fdisplay(f, "%08x", fabric.reg_start_x);
+        $fdisplay(f, "%08x", fabric.reg_start_y);
+        for (i = 0; i < 128; i = i + 1) begin
+            $fdisplay(f, "%08x", memory.chip1[i]);
+        end
 
         $finish();
     end
@@ -102,7 +109,7 @@ module mem(
     reg [1:0] ns;
 
     initial begin
-        $readmemh("mem.hex", chip0);
+        $readmemh("test32.hex", chip0);
         cs = 0;
     end
     reg [31:0] rd_addr;
