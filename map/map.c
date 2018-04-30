@@ -26,28 +26,9 @@
 #define B_MASK       0xF0FFFFFF
 #define BR_MASK      0x0FFFFFFF
 
-// TODO: keep track of path followed (array of cells)
-
-map_t* generate_map(int rows, int cols) {
-
-    // initialize the map struct
-    map_t* map = (map_t*) malloc(sizeof(map));
-    map->w = cols;
-    map->h = rows;
-    map->buffer = (uint32_t*) malloc(rows * cols * sizeof(uint32_t));
-
-    // seed the random number generator
-    srand(MAP_SEED);
-
-    // generate random weights for each cell in the map
-    uint32_t* weight_buffer = (uint32_t*) malloc(rows * cols * sizeof(uint32_t)); // TODO put this back
-    for (int i = 0; i < rows*cols; i++) {
-        weight_buffer[i] = rand() % MAX_WEIGHT;
-    }
-
-    // assign the weights as "edges" to each cell
-    for (int r = 0; r < rows; r++) {
-        for (int c = 0; c < cols; c++) {
+static void assign_weights(map_t* map, uint32_t* weight_buffer) {
+    for (int r = 0; r < map->h; r++) {
+        for (int c = 0; c < map->w; c++) {
 
             // TODO: slight optimizations
             //       - don't have to AND with a mask if already zero (just an OR will work)
@@ -68,7 +49,7 @@ map_t* generate_map(int rows, int cols) {
             }
 
             // assign the top right edge
-            if (r - 1 >= 0   &&   c + 1 < cols) {
+            if (r - 1 >= 0   &&   c + 1 < map->w) {
                 int wb_index = mb_index - map->w + 1;
                 map->buffer[mb_index] = (map->buffer[mb_index] & TR_MASK) | (weight_buffer[wb_index] << TR_SHIFT);
             }
@@ -80,34 +61,69 @@ map_t* generate_map(int rows, int cols) {
             }
 
             // assign the right edge
-            if (c + 1 < cols) {
+            if (c + 1 < map->w) {
                 int wb_index = mb_index + 1;
                 map->buffer[mb_index] = (map->buffer[mb_index] & R_MASK) | (weight_buffer[wb_index] << R_SHIFT);
             }
-
+            
             // assign the bottom left edge
-            if (c - 1 >= 0   &&   r + 1 < rows) {
+            if (c - 1 >= 0   &&   r + 1 < map->w) {
                 int wb_index = mb_index - 1 + map->w;
                 map->buffer[mb_index] = (map->buffer[mb_index] & BL_MASK) | (weight_buffer[wb_index] << BL_SHIFT);
             }
-
+            
             // assign the bottom edge
-            if (r + 1 < rows) {
+            if (r + 1 < map->w) {
                 int wb_index = mb_index + map->w;
                 map->buffer[mb_index] = (map->buffer[mb_index] & B_MASK) | (weight_buffer[wb_index] << B_SHIFT);
             }
-
+            
             // assign the bottom right edge
-            if (r + 1 < rows   &&   c + 1 < cols) {
+            if (r + 1 < map->w   &&   c + 1 < map->w) {
                 int wb_index = mb_index + map->w + 1;
                 map->buffer[mb_index] = (map->buffer[mb_index] & BR_MASK) | (weight_buffer[wb_index] << BR_SHIFT);
             }
         }
     }
+}
 
-    // free up resources
-    free(weight_buffer);
+static void print_map(map_t* map, uint32_t* weight_buffer) {
+    for (int i = 0; i < map->h*map->w; i++) {
+        if (weight_buffer[i] == MAX_WEIGHT) {
+            printf("%*c", 3, '*'); // obstacles
+        } else {
+            //printf("%*d", 3, weight_buffer[i]); // weights
+            printf("%*c", 3, ' '); // blank meaning some weight that isn't MAX_WEIGHT
+        }
+        if (i % map->w == 0) {
+            printf("\n");
+        }
+    }
+}
 
+map_t* generate_map(int rows, int cols) {
+
+    // initialize the map struct
+    map_t* map = (map_t*) malloc(sizeof(map));
+    map->w = cols;
+    map->h = rows;
+    map->buffer = (uint32_t*) malloc(rows * cols * sizeof(uint32_t));
+
+    // seed the random number generator
+    srand(MAP_SEED);
+
+    // generate random weights for each cell in the map
+    uint32_t weight_buffer[rows*cols];
+    for (int i = 0; i < rows*cols; i++) {
+        weight_buffer[i] = rand() % (MAX_WEIGHT+1);
+    }
+
+    // print the map of random weights
+//     print_map(map, weight_buffer);
+
+    // assign the weights as "edges" to each cell
+    assign_weights(map, weight_buffer);
+    
     return map;
 }
 
