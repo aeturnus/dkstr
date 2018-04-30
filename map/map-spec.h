@@ -41,8 +41,13 @@ extern "C" {
 typedef struct map_ {
     int w;
     int h;
-    uint32_t* buffer;
+    uint8_t* buffer;
 } map_t;
+
+typedef struct loc_ {
+	int r;
+	int c;
+} loc_t;
 
 #ifdef __cplusplus
 }
