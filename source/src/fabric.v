@@ -1,4 +1,5 @@
-module fabric32(
+module fabric #(parameter DIM=32, parameter COST_SIZE=9)
+    (
         input   wire    clk,
         input   wire    arst_n,
 
@@ -25,6 +26,11 @@ module fabric32(
         output  wire    int_done
     );
     // params
+    localparam N = (DIM * DIM);
+    localparam N_SIZE = $clog2(N);
+    localparam S = COST_SIZE;
+    localparam BORDER_COST = {S{1'b1}};
+
     localparam ADDR_MAP = 32'h40000000;
     localparam ADDR_DIR = 32'h40002000;
 
@@ -49,14 +55,12 @@ module fabric32(
     wire rst;
 
     // fabric variables
-    reg [1023:0] clr;
-    reg [1023:0] ld;
+    reg [N-1:0] clr;
+    reg [N-1:0] ld;
     reg [3:0] ld_weight;
-    wire [1023:0] mod;
-    wire [11:0] cost[0:1023];
-    wire [3:0] dir[0:1023];
-    localparam COST_SIZE = 12;
-    localparam BORDER_COST = 12'hfff;
+    wire [N-1:0] mod;
+    wire [S-1:0] cost[0:N-1];
+    wire [3:0] dir[0:N-1];
 
     wire activity;
     assign activity = |mod;
@@ -65,8 +69,8 @@ module fabric32(
     reg [3:0] ns;
 
     // internal registers and signals
-    reg [4:0] curr_x, curr_y;     // current coordinates, for writing and reading
-    reg [9:0] curr;         // current node
+    reg [4:0] curr_x, curr_y;   // current coordinates, for writing and reading
+    reg [N_SIZE-1:0] curr;      // current node
     reg [6:0] addr_off;     // word address offset
     reg [31:0] data_word;   // data word to read/pass
     reg [15:0] history;
@@ -227,12 +231,12 @@ module fabric32(
     // other combination signals
     always @(*) begin
         // default ld and clr signals
-        for (i = 0; i < 1024; i = i + 1) begin
+        for (i = 0; i < N-1; i = i + 1) begin
             ld[i] = 0;
             clr[i] = 0;
         end
         if (o_ld_weight) ld[curr] = 1;
-        if (reg_run) clr[reg_start_x + (reg_start_y << 5)] = 1;
+        if (reg_run) clr[reg_start_x + (reg_start_y * DIM)] = 1;
         case (curr[2:0])
         0: ld_weight = data_word[3:0];
         1: ld_weight = data_word[7:4];
@@ -291,7 +295,6 @@ module fabric32(
             cs <= ns;
 
             if (o_clr_curr) begin
-                curr_x <= 0; curr_y <= 0;
                 curr <= 0;
             end
             if (o_clr_addr_off) begin
@@ -305,20 +308,10 @@ module fabric32(
             end
 
             if (o_inc_curr) begin
-                curr <= curr + 1;
-
-                if (curr_x == 31) begin
-                    curr_x <= 0;
-                    if (curr_y == 0) begin
-                        curr_y <= 0;
-                    end
-                    else begin
-                        curr_y <= curr_y + 1;
-                    end
-                end
-                else begin
-                    curr_x <= curr_x + 1;
-                end
+                if (curr == N-1)
+                    curr <= 0;
+                else
+                    curr <= curr + 1;
             end
 
             if (o_clr_load_map) begin
@@ -352,5 +345,103 @@ module fabric32(
         end
     end
 
-    `include "fabric32_fabric.v"
+    // generate the fabric
+    genvar r, c;
+    generate
+    for (r = 0; r < DIM; r = r + 1) begin:fab_neu
+        for (c = 0; c < DIM; c = c + 1) begin
+            if (r == 0 && c == 0) begin
+                neu #(.X(c), .Y(r), .N(c+r*DIM), .COST_SIZE(COST_SIZE))
+                    neu (.clk(clk), .rst(rst), .clr(clr[c+r*DIM]), .ld(ld[c+r*DIM]), .ld_weight(ld_weight),
+                         .n_cost(BORDER_COST), .ne_cost(BORDER_COST),
+                         .e_cost(cost[(c+1) + (r)*DIM]), .se_cost(cost[(c+1) + (r+1)*DIM]),
+                         .s_cost(cost[(c) + (r+1)*DIM]), .sw_cost(BORDER_COST),
+                         .w_cost(BORDER_COST), .nw_cost(BORDER_COST),
+                         .path_mod(mod[c+r*DIM]), .path_dir(dir[c+r*DIM]), .path_cost(cost[c+r*DIM])
+                        );
+            end
+            else if (r == 0 && c == DIM-1) begin
+                neu #(.X(c), .Y(r), .N(c+r*DIM), .COST_SIZE(COST_SIZE))
+                    neu (.clk(clk), .rst(rst), .clr(clr[c+r*DIM]), .ld(ld[c+r*DIM]), .ld_weight(ld_weight),
+                         .n_cost(BORDER_COST), .ne_cost(BORDER_COST),
+                         .e_cost(BORDER_COST), .se_cost(BORDER_COST),
+                         .s_cost(cost[(c) + (r+1)*DIM]), .sw_cost(cost[(c-1) + (r+1)*DIM]),
+                         .w_cost(cost[(c-1) + (r)*DIM]), .nw_cost(BORDER_COST),
+                         .path_mod(mod[c+r*DIM]), .path_dir(dir[c+r*DIM]), .path_cost(cost[c+r*DIM])
+                        );
+            end
+            else if (r == DIM - 1 && c == 0) begin
+                neu #(.X(c), .Y(r), .N(c+r*DIM), .COST_SIZE(COST_SIZE))
+                    neu (.clk(clk), .rst(rst), .clr(clr[c+r*DIM]), .ld(ld[c+r*DIM]), .ld_weight(ld_weight),
+                         .n_cost(cost[(c) + (r-1)*DIM]), .ne_cost(cost[(c+1) + (r-1)*DIM]),
+                         .e_cost(cost[(c+1) + (r)*DIM]), .se_cost(BORDER_COST),
+                         .s_cost(BORDER_COST), .sw_cost(BORDER_COST),
+                         .w_cost(BORDER_COST), .nw_cost(BORDER_COST),
+                         .path_mod(mod[c+r*DIM]), .path_dir(dir[c+r*DIM]), .path_cost(cost[c+r*DIM])
+                        );
+            end
+            else if (r == DIM - 1 && c == DIM - 1) begin
+                neu #(.X(c), .Y(r), .N(c+r*DIM), .COST_SIZE(COST_SIZE))
+                    neu (.clk(clk), .rst(rst), .clr(clr[c+r*DIM]), .ld(ld[c+r*DIM]), .ld_weight(ld_weight),
+                         .n_cost(cost[(c) + (r-1)*DIM]), .ne_cost(BORDER_COST),
+                         .e_cost(BORDER_COST), .se_cost(BORDER_COST),
+                         .s_cost(BORDER_COST), .sw_cost(BORDER_COST),
+                         .w_cost(cost[(c-1) + (r)*DIM]), .nw_cost(cost[(c-1) + (r-1)*DIM]),
+                         .path_mod(mod[c+r*DIM]), .path_dir(dir[c+r*DIM]), .path_cost(cost[c+r*DIM])
+                        );
+            end
+            else if (r == 0) begin
+                neu #(.X(c), .Y(r), .N(c+r*DIM), .COST_SIZE(COST_SIZE))
+                    neu (.clk(clk), .rst(rst), .clr(clr[c+r*DIM]), .ld(ld[c+r*DIM]), .ld_weight(ld_weight),
+                         .n_cost(BORDER_COST), .ne_cost(BORDER_COST),
+                         .e_cost(cost[(c+1) + (r)*DIM]), .se_cost(cost[(c+1) + (r+1)*DIM]),
+                         .s_cost(cost[(c) + (r+1)*DIM]), .sw_cost(cost[(c-1) + (r+1)*DIM]),
+                         .w_cost(cost[(c-1) + (r)*DIM]), .nw_cost(BORDER_COST),
+                         .path_mod(mod[c+r*DIM]), .path_dir(dir[c+r*DIM]), .path_cost(cost[c+r*DIM])
+                        );
+            end
+            else if (r == DIM - 1) begin
+                neu #(.X(c), .Y(r), .N(c+r*DIM), .COST_SIZE(COST_SIZE))
+                    neu (.clk(clk), .rst(rst), .clr(clr[c+r*DIM]), .ld(ld[c+r*DIM]), .ld_weight(ld_weight),
+                         .n_cost(cost[(c) + (r-1)*DIM]), .ne_cost(cost[(c+1) + (r-1)*DIM]),
+                         .e_cost(cost[(c+1) + (r)*DIM]), .se_cost(BORDER_COST),
+                         .s_cost(BORDER_COST), .sw_cost(BORDER_COST),
+                         .w_cost(cost[(c-1) + (r)*DIM]), .nw_cost(cost[(c-1) + (r-1)*DIM]),
+                         .path_mod(mod[c+r*DIM]), .path_dir(dir[c+r*DIM]), .path_cost(cost[c+r*DIM])
+                        );
+            end
+            else if (c == 0) begin
+                neu #(.X(c), .Y(r), .N(c+r*DIM), .COST_SIZE(COST_SIZE))
+                    neu (.clk(clk), .rst(rst), .clr(clr[c+r*DIM]), .ld(ld[c+r*DIM]), .ld_weight(ld_weight),
+                         .n_cost(cost[(c) + (r-1)*DIM]), .ne_cost(cost[(c+1) + (r-1)*DIM]),
+                         .e_cost(cost[(c+1) + (r)*DIM]), .se_cost(cost[(c+1) + (r+1)*DIM]),
+                         .s_cost(cost[(c) + (r+1)*DIM]), .sw_cost(BORDER_COST),
+                         .w_cost(BORDER_COST), .nw_cost(BORDER_COST),
+                         .path_mod(mod[c+r*DIM]), .path_dir(dir[c+r*DIM]), .path_cost(cost[c+r*DIM])
+                        );
+            end
+            else if (c == DIM - 1) begin
+                neu #(.X(c), .Y(r), .N(c+r*DIM), .COST_SIZE(COST_SIZE))
+                    neu (.clk(clk), .rst(rst), .clr(clr[c+r*DIM]), .ld(ld[c+r*DIM]), .ld_weight(ld_weight),
+                         .n_cost(cost[(c) + (r-1)*DIM]), .ne_cost(BORDER_COST),
+                         .e_cost(BORDER_COST), .se_cost(BORDER_COST),
+                         .s_cost(cost[(c) + (r+1)*DIM]), .sw_cost(cost[(c-1) + (r+1)*DIM]),
+                         .w_cost(cost[(c-1) + (r)*DIM]), .nw_cost(cost[(c-1) + (r-1)*DIM]),
+                         .path_mod(mod[c+r*DIM]), .path_dir(dir[c+r*DIM]), .path_cost(cost[c+r*DIM])
+                        );
+            end
+            else begin
+                neu #(.X(c), .Y(r), .N(c+r*DIM), .COST_SIZE(COST_SIZE))
+                    neu (.clk(clk), .rst(rst), .clr(clr[c+r*DIM]), .ld(ld[c+r*DIM]), .ld_weight(ld_weight),
+                         .n_cost(cost[(c) + (r-1)*DIM]), .ne_cost(cost[(c+1) + (r-1)*DIM]),
+                         .e_cost(cost[(c+1) + (r)*DIM]), .se_cost(cost[(c+1) + (r+1)*DIM]),
+                         .s_cost(cost[(c) + (r+1)*DIM]), .sw_cost(cost[(c-1) + (r+1)*DIM]),
+                         .w_cost(cost[(c-1) + (r)*DIM]), .nw_cost(cost[(c-1) + (r-1)*DIM]),
+                         .path_mod(mod[c+r*DIM]), .path_dir(dir[c+r*DIM]), .path_cost(cost[c+r*DIM])
+                        );
+            end
+        end
+    end
+    endgenerate
+
 endmodule

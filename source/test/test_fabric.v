@@ -1,6 +1,6 @@
 `timescale 1ns/1ns
 
-module test_fabric32();
+module test_fabric();
 
     reg clk;
     reg arst_n;
@@ -19,12 +19,15 @@ module test_fabric32();
             .data_rdy(data_rdy)
         );
 
+    localparam DIM = 32;
+    localparam N   = DIM * DIM;
+    localparam COST_SIZE = 9;
 
     reg ctrl_wr;
     reg [31:0] ctrl_in;
     wire [31:0] ctrl_out;
     wire int_done;
-    fabric32 fabric(
+    fabric #(.DIM(DIM), .COST_SIZE(COST_SIZE)) fabric(
             .clk(clk),
             .arst_n(arst_n),
             .ctrl_wr(ctrl_wr),
@@ -41,10 +44,10 @@ module test_fabric32();
             .int_done(int_done)
         );
 
-    integer i,j,f;
+    integer i,j,f,r,c;
     always begin
-        $dumpfile("wave_fabric32.vcd");
-        $dumpvars(0, test_fabric32);
+        $dumpfile("wave_fabric.vcd");
+        $dumpvars(0, test_fabric);
         clk = 0;
         arst_n = 1;
         ctrl_wr = 0;
@@ -58,8 +61,11 @@ module test_fabric32();
         ctrl_wr = 0;
 
         // run until completion
+        //#20000;
         @(posedge int_done);
         #10000;
+
+        /*
 
         ctrl_in = {1'd1, 1'd0, 20'd0, 5'd1, 5'd1};
         ctrl_wr = 1;
@@ -68,13 +74,21 @@ module test_fabric32();
 
         @(posedge int_done);
         #10000;
+        */
 
 
         f = $fopen("paths.hex","w");
         $fdisplay(f, "%08x", fabric.reg_start_x);
         $fdisplay(f, "%08x", fabric.reg_start_y);
-        for (i = 0; i < 128; i = i + 1) begin
+        for (i = 0; i < N; i = i + 1) begin
             $fdisplay(f, "%08x", memory.chip1[i]);
+        end
+
+        for (r = 0; r < DIM; r = r + 1) begin
+            for (c = 0; c < DIM; c = c + 1) begin
+                $display("NEU[%2d,%2d]: %0d.%0d", c, r,
+                (fabric.cost[c + r*32] >> 1), (fabric.cost[c + r*32][0] ? 5 : 0));
+            end
         end
 
         $finish();
