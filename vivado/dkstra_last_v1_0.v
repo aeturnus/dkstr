@@ -86,6 +86,9 @@
         wire fabric_wr;
         wire [31:0] fabric_ctrl_out;
         wire [31:0] fabric_ctrl_in;
+        wire [31:0] fabric_cnt_ld;
+        wire [31:0] fabric_cnt_run;
+        wire [31:0] fabric_cnt_st;
         wire [31:0] MST_TXN_ADDR;
         wire [31:0] MST_TXN_WDATA;
         wire [31:0] MST_TXN_RDATA;
@@ -93,34 +96,40 @@
         wire MST_TXN_DATA_VALID;
         wire MST_TXN_WTXN;
         wire MST_INIT_AXI_TXN;
-        
 
 
-    fabric32 # (
+
+    fabric # (
         .DIM(28),
-        .COST_SIZE(9)
-    ) fabric32_inst (
+        .COST_SIZE(9),
+        .ADDR_MAP(32'h40000000),
+        .ADDR_DIR(32'h40001000)
+    ) fabric_inst (
             .clk(s00_axi_aclk),
             .arst_n(s00_axi_aresetn),
-            
+
             .ctrl_wr(fabric_wr),
             .ctrl_in(fabric_ctrl_in),
             .ctrl_out(fabric_ctrl_out),
-            
+
+            .cnt_ld_cycles(fabric_cnt_ld),
+            .cnt_run_cycles(fabric_cnt_run),
+            .cnt_st_cycles(fabric_cnt_st),
+
             .txn_rdy(MST_TXN_DATA_VALID),
             .txn_rdata(MST_TXN_RDATA),
             .txn_wdata(MST_TXN_WDATA),
             .txn_addr(MST_TXN_ADDR),
             .txn_req(MST_INIT_AXI_TXN),
             .txn_wr(MST_TXN_WTXN),
-    
+
             // interrupts
             .int_done(the_interrupt)
     );
 
 
 // Instantiation of Axi Bus Interface S00_AXI
-	dkstra_last_v1_0_S00_AXI # ( 
+	dkstra_last_v1_0_S00_AXI # (
 		.C_S_AXI_DATA_WIDTH(C_S00_AXI_DATA_WIDTH),
 		.C_S_AXI_ADDR_WIDTH(C_S00_AXI_ADDR_WIDTH)
 	) dkstra_w_masterlite_v1_0_S00_AXI_inst (
@@ -129,13 +138,16 @@
         .MST_TXN_WDATA(MST_TXN_WDATA),
         .MST_TXN_RDATA(MST_TXN_RDATA),
         .MST_TXN_DATA_VALID(MST_TXN_DATA_VALID),
-        .MST_TXN_WTXN(MST_TXN_WTXN),		
+        .MST_TXN_WTXN(MST_TXN_WTXN),
         .MST_INIT_AXI_TXN(MST_INIT_AXI_TXN),
         */
-        
+
         .FABRIC_CTRL_OUT(fabric_ctrl_out),
         .FABRIC_CTRL_IN(fabric_ctrl_in),
         .FABRIC_WR(fabric_wr),
+        .FABRIC_CNT_LD(fabric_cnt_ld),
+        .FABRIC_CNT_RUN(fabric_cnt_run),
+        .FABRIC_CNT_ST(fabric_cnt_st),
 
 		.S_AXI_ACLK(s00_axi_aclk),
 		.S_AXI_ARESETN(s00_axi_aresetn),
@@ -161,7 +173,7 @@
 	);
 
 // Instantiation of Axi Bus Interface M00_AXI
-	dkstra_last_v1_0_M00_AXI # ( 
+	dkstra_last_v1_0_M00_AXI # (
 		.C_M_START_DATA_VALUE(C_M00_AXI_START_DATA_VALUE),
 		.C_M_TARGET_SLAVE_BASE_ADDR(C_M00_AXI_TARGET_SLAVE_BASE_ADDR),
 		.C_M_AXI_ADDR_WIDTH(C_M00_AXI_ADDR_WIDTH),

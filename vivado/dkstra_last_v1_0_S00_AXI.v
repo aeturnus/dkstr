@@ -30,6 +30,9 @@
         output wire FABRIC_WR,
         output wire [31:0] FABRIC_CTRL_IN,
         input  wire [31:0] FABRIC_CTRL_OUT,
+        input  wire [31:0] FABRIC_CNT_LD,
+        input  wire [31:0] FABRIC_CNT_RUN,
+        input  wire [31:0] FABRIC_CNT_ST,
 
 		// Global Clock Signal
 		input wire  S_AXI_ACLK,
@@ -675,10 +678,10 @@
 	      // Address decoding for reading registers
 	      case ( axi_araddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] )
 	        5'h00   : reg_data_out <= FABRIC_CTRL_OUT;
-	        5'h01   : reg_data_out <= slv_reg1;
-	        5'h02   : reg_data_out <= 32'hcafed0d0;
-	        5'h03   : reg_data_out <= 0;
-	        5'h04   : reg_data_out <= 0;
+	        5'h01   : reg_data_out <= FABRIC_CNT_LD;
+	        5'h02   : reg_data_out <= FABRIC_CNT_RUN;
+	        5'h03   : reg_data_out <= FABRIC_CNT_ST;
+	        5'h04   : reg_data_out <= 32'hcafed0d0;
 	        5'h05   : reg_data_out <= 0;
 	        5'h06   : reg_data_out <= 0;
 	        5'h07   : reg_data_out <= 0;

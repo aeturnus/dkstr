@@ -28,12 +28,17 @@ module test_fabric();
     reg [31:0] ctrl_in;
     wire [31:0] ctrl_out;
     wire int_done;
+    wire [31:0] cnt_ld, cnt_run, cnt_st;
     fabric #(.DIM(DIM), .COST_SIZE(COST_SIZE)) fabric(
             .clk(clk),
             .arst_n(arst_n),
             .ctrl_wr(ctrl_wr),
             .ctrl_in(ctrl_in),
             .ctrl_out(ctrl_out),
+
+            .cnt_ld_cycles(cnt_ld),
+            .cnt_run_cycles(cnt_run),
+            .cnt_st_cycles(cnt_st),
 
             .txn_req(req),
             .txn_wr(wr),
@@ -66,7 +71,7 @@ module test_fabric();
         @(posedge int_done);
         #10000;
 
-        /*
+        ///*
 
         ctrl_in = {1'd1, 1'd0, 20'd0, 5'd1, 5'd1};
         ctrl_wr = 1;
@@ -75,7 +80,7 @@ module test_fabric();
 
         @(posedge int_done);
         #10000;
-        */
+        //*/
 
 
         f = $fopen("paths.hex","w");
@@ -122,7 +127,7 @@ module mem(
     reg [31:0] wr_data;
     reg [4:0] cnt;
 
-    localparam CNT = 4;
+    localparam CNT = 16;
     always @(posedge clk) begin
         case (cs)
         0: begin
@@ -134,7 +139,7 @@ module mem(
                 cnt <= CNT;
             end
             else if (req && wr) begin
-                wr_addr <= ((addr - 32'h40002000) >> 2);
+                wr_addr <= ((addr - 32'h40001000) >> 2);
                 wr_data <= data_wr;
                 cs <= 2;
                 data_rdy <= 0;
