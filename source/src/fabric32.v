@@ -55,6 +55,8 @@ module fabric32(
     wire [1023:0] mod;
     wire [11:0] cost[0:1023];
     wire [3:0] dir[0:1023];
+    localparam COST_SIZE = 12;
+    localparam BORDER_COST = 12'hfff;
 
     wire activity;
     assign activity = |mod;
