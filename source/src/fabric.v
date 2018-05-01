@@ -231,7 +231,7 @@ module fabric #(parameter DIM=32, parameter COST_SIZE=9)
     // other combination signals
     always @(*) begin
         // default ld and clr signals
-        for (i = 0; i < N-1; i = i + 1) begin
+        for (i = 0; i < N; i = i + 1) begin
             ld[i] = 0;
             clr[i] = 0;
         end

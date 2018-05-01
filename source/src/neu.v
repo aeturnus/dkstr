@@ -73,25 +73,25 @@ module neu #(parameter X=0, parameter Y=0, parameter N=0,
             new_dir  = {1'b1,state};
             changed = 1;
             /*
-            $display("[%0d,(%d,%d)] travel: %0d.%0d, current: %0d.%0d", N, X, Y,
-                      travel_cost[11:1], travel_cost[0] ? 5 : 0,
-                      cost[11:1], cost[0] ? 5 : 0);
+            $display("[%0d,(%0d,%0d)] travel: %0d.%0d, current: %0d.%0d", N, X, Y,
+                      travel_cost[S-1:1], travel_cost[0] ? 5 : 0,
+                      cost[S-1:1], cost[0] ? 5 : 0);
             $display("    n_cost: %0d.%0d",
-                    n_cost[11:1], n_cost[0] ? 5 : 0);
+                    n_cost[S-1:1], n_cost[0] ? 5 : 0);
             $display("    ne_cost: %0d.%0d",
-                    ne_cost[11:1], ne_cost[0] ? 5 : 0);
+                    ne_cost[S-1:1], ne_cost[0] ? 5 : 0);
             $display("    e_cost: %0d.%0d",
-                    e_cost[11:1], e_cost[0] ? 5 : 0);
+                    e_cost[S-1:1], e_cost[0] ? 5 : 0);
             $display("    se_cost: %0d.%0d",
-                    se_cost[11:1], se_cost[0] ? 5 : 0);
+                    se_cost[S-1:1], se_cost[0] ? 5 : 0);
             $display("    s_cost: %0d.%0d",
-                    s_cost[11:1], s_cost[0] ? 5 : 0);
+                    s_cost[S-1:1], s_cost[0] ? 5 : 0);
             $display("    sw_cost: %0d.%0d",
-                    sw_cost[11:1], sw_cost[0] ? 5 : 0);
+                    sw_cost[S-1:1], sw_cost[0] ? 5 : 0);
             $display("    w_cost: %0d.%0d",
-                    w_cost[11:1], w_cost[0] ? 5 : 0);
+                    w_cost[S-1:1], w_cost[0] ? 5 : 0);
             $display("    nw_cost: %0d.%0d",
-                    nw_cost[11:1], nw_cost[0] ? 5 : 0);
+                    nw_cost[S-1:1], nw_cost[0] ? 5 : 0);
             */
         end
         else changed = 0;
