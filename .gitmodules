@@ -1,0 +1,6 @@
+[submodule "app/external/libmem"]
+	path = app/external/libmem
+	url = https://github.com/aeturnus/libmem
+[submodule "app/external/libbtn"]
+	path = app/external/libbtn
+	url = https://github.com/aeturnus/libbtn
