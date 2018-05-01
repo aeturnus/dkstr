@@ -1,6 +1,6 @@
-[submodule "tester/external/libmem"]
-	path = tester/external/libmem
+[submodule "app/external/libmem"]
+	path = app/external/libmem
 	url = https://github.com/aeturnus/libmem
-[submodule "tester/external/libbtn"]
-	path = tester/external/libbtn
+[submodule "app/external/libbtn"]
+	path = app/external/libbtn
 	url = https://github.com/aeturnus/libbtn
