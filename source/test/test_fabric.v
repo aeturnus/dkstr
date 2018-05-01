@@ -19,7 +19,8 @@ module test_fabric();
             .data_rdy(data_rdy)
         );
 
-    localparam DIM = 32;
+    //localparam DIM = 32;
+    localparam DIM = 28;
     localparam N   = DIM * DIM;
     localparam COST_SIZE = 9;
 
@@ -61,7 +62,7 @@ module test_fabric();
         ctrl_wr = 0;
 
         // run until completion
-        //#20000;
+        //#30000;
         @(posedge int_done);
         #10000;
 
@@ -87,7 +88,7 @@ module test_fabric();
         for (r = 0; r < DIM; r = r + 1) begin
             for (c = 0; c < DIM; c = c + 1) begin
                 $display("NEU[%2d,%2d]: %0d.%0d", c, r,
-                (fabric.cost[c + r*32] >> 1), (fabric.cost[c + r*32][0] ? 5 : 0));
+                (fabric.cost[c + r*DIM] >> 1), (fabric.cost[c + r*DIM][0] ? 5 : 0));
             end
         end
 
@@ -113,7 +114,7 @@ module mem(
     reg [1:0] ns;
 
     initial begin
-        $readmemh("test32.hex", chip0);
+        $readmemh("test28.hex", chip0);
         cs = 0;
     end
     reg [31:0] rd_addr;
