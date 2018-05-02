@@ -164,9 +164,15 @@ void hw_gen_path(int w, int h, const coord * start, const coord * end,
         if (dir & 0x8)
             dir &= 0x7;
         else {
-            printf("No path from (%d,%d) to (%d,%d)\n", start->x, start->y, end->x, end->y);
+            //printf("No path from (%d,%d) to (%d,%d)\n", start->x, start->y, end->x, end->y);
             return;
         }
+
+        /*
+        printf("Going from (%d,%d) -> (%d,%d)\n",
+               curr.x, curr.y,
+               curr.x + dirs[dir][0], curr.y + dirs[dir][1]);
+        */
 
         if (dir == prev_dir) {
             movement * move_p = (movement *) vector_backp(&path->moves);
@@ -249,6 +255,21 @@ int hw_pathfind(const map * map, const coord * start, const coord * end, path * 
     prof_end(prof); prof->poproc += prof_dt(prof);
     */
 
+    uint32_t ld_cycles = dkstr[1];
+    uint32_t run_cycles = dkstr[2];
+    uint32_t st_cycles = dkstr[3];
+
+    /*
+    printf("Cycles spent loading the nodes: %d\n", ld_cycles);
+    printf("Cycles spent executing the nodes: %d\n", run_cycles);
+    printf("Cycles spent storing the nodes: %d\n", st_cycles);
+    */
+    /*
+    printf("Time spent loading the nodes: %d ns\n", (uint64_t)ld_cycles);
+    printf("Time  spent executing the nodes: %d ns\n", (uint64_t)run_cycles);
+    printf("Time spent storing the nodes: %d ns\n", (uint64_t)st_cycles);
+    */
+
     free(map_buffer);
     return 0;
 }
@@ -311,7 +332,7 @@ int main(int argc, char * argv[])
     // dkstr play <map_path> <start_x> <start_y> <end_x> <end_y> [sw,hw; default sw]
     else if (!strcmp("play", argv[1])) {
         if (argc <= 6) {
-            fprintf(stderr, "ERROR: dkstr play <start_x> <start_y> <end_x> <end_y> [sw,hw; default sw]\n");
+            fprintf(stderr, "ERROR: dkstr play <map_path> <start_x> <start_y> <end_x> <end_y> [sw,hw; default sw]\n");
         }
 
         coord start, end;
