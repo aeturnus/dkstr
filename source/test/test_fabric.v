@@ -125,6 +125,15 @@ module mem(
         $readmemh("test28.hex", chip0);
         cs = 0;
     end
+
+    reg [1:0] req_ff;
+    reg [1:0] wr_ff;
+    reg [31:0] raddr_delay, waddr_delay, wdata_delay;
+
+    wire req_pulse, wr_pulse;
+    assign req_pulse = !req_ff[1] && req_ff[0];
+    assign wr_pulse = !wr_ff[1] && wr_ff[0];
+
     reg [31:0] rd_addr;
     reg [31:0] wr_addr;
     reg [31:0] wr_data;
@@ -132,18 +141,26 @@ module mem(
 
     localparam CNT = 16;
     always @(posedge clk) begin
+
+        waddr_delay <= waddr;
+        raddr_delay <= raddr;
+        wdata_delay <= data_wr;
+
+        req_ff <= {req_ff[0], req};
+        wr_ff <= {wr_ff[0], wr};
+
         case (cs)
         0: begin
             data_rdy <= 1;
-            if (req && !wr) begin
-                rd_addr <= ((raddr - 32'h40000000) >> 2);
+            if (req_pulse && !wr_pulse) begin
+                rd_addr <= ((raddr_delay - 32'h40000000) >> 2);
                 cs <= 1;
                 data_rdy <= 0;
                 cnt <= CNT;
             end
-            else if (req && wr) begin
-                wr_addr <= ((waddr - 32'h40001000) >> 2);
-                wr_data <= data_wr;
+            else if (req_pulse && wr_pulse) begin
+                wr_addr <= ((waddr_delay - 32'h40001000) >> 2);
+                wr_data <= wdata_delay;
                 cs <= 2;
                 data_rdy <= 0;
                 cnt <= CNT;
