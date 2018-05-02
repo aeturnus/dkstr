@@ -8,12 +8,13 @@ module test_fabric();
     always #5 clk = ~clk;
 
     wire req, wr, data_rdy;
-    wire [31:0] addr, data_wr, data_rd;
+    wire [31:0] raddr, waddr, data_wr, data_rd;
     mem memory(
             .clk(clk),
             .req(req),
             .wr(wr),
-            .addr(addr),
+            .waddr(waddr),
+            .raddr(raddr),
             .data_wr(data_wr),
             .data_rd(data_rd),
             .data_rdy(data_rdy)
@@ -28,6 +29,7 @@ module test_fabric();
     reg [31:0] ctrl_in;
     wire [31:0] ctrl_out;
     wire int_done;
+    wire [31:0] cnt_ld, cnt_run, cnt_st;
     fabric #(.DIM(DIM), .COST_SIZE(COST_SIZE)) fabric(
             .clk(clk),
             .arst_n(arst_n),
@@ -35,9 +37,14 @@ module test_fabric();
             .ctrl_in(ctrl_in),
             .ctrl_out(ctrl_out),
 
+            .cnt_ld_cycles(cnt_ld),
+            .cnt_run_cycles(cnt_run),
+            .cnt_st_cycles(cnt_st),
+
             .txn_req(req),
             .txn_wr(wr),
-            .txn_addr(addr),
+            .txn_waddr(waddr),
+            .txn_raddr(raddr),
             .txn_wdata(data_wr),
             .txn_rdata(data_rd),
             .txn_rdy(data_rdy),
@@ -66,7 +73,7 @@ module test_fabric();
         @(posedge int_done);
         #10000;
 
-        /*
+        ///*
 
         ctrl_in = {1'd1, 1'd0, 20'd0, 5'd1, 5'd1};
         ctrl_wr = 1;
@@ -75,7 +82,7 @@ module test_fabric();
 
         @(posedge int_done);
         #10000;
-        */
+        //*/
 
 
         f = $fopen("paths.hex","w");
@@ -101,7 +108,8 @@ module mem(
         input   wire    clk,
         input   wire    req,
         input   wire    wr,
-        input   wire [31:0] addr,
+        input   wire [31:0] raddr,
+        input   wire [31:0] waddr,
         input   wire [31:0] data_wr,
         output  reg  [31:0] data_rd,
         output  reg         data_rdy
@@ -122,19 +130,19 @@ module mem(
     reg [31:0] wr_data;
     reg [4:0] cnt;
 
-    localparam CNT = 4;
+    localparam CNT = 16;
     always @(posedge clk) begin
         case (cs)
         0: begin
             data_rdy <= 1;
             if (req && !wr) begin
-                rd_addr <= ((addr - 32'h40000000) >> 2);
+                rd_addr <= ((raddr - 32'h40000000) >> 2);
                 cs <= 1;
                 data_rdy <= 0;
                 cnt <= CNT;
             end
             else if (req && wr) begin
-                wr_addr <= ((addr - 32'h40002000) >> 2);
+                wr_addr <= ((waddr - 32'h40001000) >> 2);
                 wr_data <= data_wr;
                 cs <= 2;
                 data_rdy <= 0;

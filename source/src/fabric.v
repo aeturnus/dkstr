@@ -1,4 +1,5 @@
-module fabric #(parameter DIM=32, parameter COST_SIZE=9)
+module fabric #(parameter DIM=32, parameter COST_SIZE=9,
+                parameter ADDR_MAP=32'h40000000, parameter ADDR_DIR=32'h40001000)
     (
         input   wire    clk,
         input   wire    arst_n,
@@ -14,25 +15,33 @@ module fabric #(parameter DIM=32, parameter COST_SIZE=9)
         input   wire    [31:0]  ctrl_in,
         output  wire    [31:0]  ctrl_out,
 
+        // count regs
+        output  wire    [31:0]  cnt_ld_cycles,
+        output  wire    [31:0]  cnt_run_cycles,
+        output  wire    [31:0]  cnt_st_cycles,
+
+        // debug regs
+        output  wire    [31:0]  dbg_data,
+
         // memory interface
         input                   txn_rdy,
         input   wire    [31:0]  txn_rdata,
         output  wire    [31:0]  txn_wdata,
-        output  reg     [31:0]  txn_addr,
+        output  wire    [31:0]  txn_raddr,
+        output  wire    [31:0]  txn_waddr,
         output  reg             txn_req,
         output  reg             txn_wr,
 
         // interrupts
         output  wire    int_done
+
+
     );
     // params
     localparam N = (DIM * DIM);
     localparam N_SIZE = $clog2(N);
     localparam S = COST_SIZE;
     localparam BORDER_COST = {S{1'b1}};
-
-    localparam ADDR_MAP = 32'h40000000;
-    localparam ADDR_DIR = 32'h40002000;
 
     // states
     localparam ST_IDLE          = 0;
@@ -51,6 +60,10 @@ module fabric #(parameter DIM=32, parameter COST_SIZE=9)
     reg reg_load;
     reg reg_run;
     assign ctrl_out = {reg_run, reg_load, 20'd0, reg_start_y, reg_start_x};
+    reg [31:0] reg_ld_cycles, reg_run_cycles, reg_st_cycles;
+    assign cnt_ld_cycles = reg_ld_cycles;
+    assign cnt_run_cycles = reg_run_cycles;
+    assign cnt_st_cycles = reg_st_cycles;
 
     wire rst;
 
@@ -80,8 +93,9 @@ module fabric #(parameter DIM=32, parameter COST_SIZE=9)
     assign txn_wdata = data_word;
 
     wire [31:0] addr_rd, addr_wr;
-    assign addr_rd = ADDR_MAP + (addr_off << 2);
-    assign addr_wr = ADDR_DIR + (addr_off << 2);
+    assign txn_raddr = ADDR_MAP + (addr_off << 2);
+    assign txn_waddr = ADDR_DIR + (addr_off << 2);
+    assign dbg_data  = data_word;
 
     // SM outputs
     reg o_clr_curr;         // clear the curr register
@@ -98,6 +112,10 @@ module fabric #(parameter DIM=32, parameter COST_SIZE=9)
     reg o_init_wr;          //
     reg o_clr_run;          // clears the run register
     reg o_int_done; assign int_done = o_int_done;
+
+    reg o_clr_cnt_ld;
+    reg o_clr_cnt_run;
+    reg o_clr_cnt_st;
 
     // SM qualifiers
     wire q_load_map; assign q_load_map = reg_load;
@@ -126,19 +144,27 @@ module fabric #(parameter DIM=32, parameter COST_SIZE=9)
         o_clr_run = 0;
         o_int_done = 0;
 
+        o_clr_cnt_ld = 0;
+        o_clr_cnt_run = 0;
+        o_clr_cnt_st = 0;
+
         // state logic
         case (cs)
 
         ST_IDLE: begin
             if (q_load_map) begin
+                ns = ST_FIRST_LOAD;
                 o_clr_curr = 1;
                 o_clr_addr_off = 1;
-                ns = ST_FIRST_LOAD;
+
+                o_clr_cnt_ld = 1;
             end
             else if (q_run) begin
                 ns = ST_RUNNING;
                 o_rst = 1;
                 o_clr_his = 1;
+
+                o_clr_cnt_run = 1;
             end
         end
 
@@ -190,6 +216,8 @@ module fabric #(parameter DIM=32, parameter COST_SIZE=9)
                 ns = ST_PACK_DIR;
                 o_clr_curr = 1;
                 o_clr_addr_off = 1;
+
+                o_clr_cnt_st = 1;
             end
         end
 
@@ -249,17 +277,14 @@ module fabric #(parameter DIM=32, parameter COST_SIZE=9)
         endcase
 
         if (o_init_rd) begin
-            txn_addr = addr_rd;
             txn_req = 1;
             txn_wr = 0;
         end
         else if (o_init_wr) begin
-            txn_addr = addr_wr;
             txn_req = 1;
             txn_wr = 1;
         end
         else begin
-            txn_addr = addr_rd;
             txn_req = 0;
             txn_wr = 0;
         end
@@ -273,6 +298,10 @@ module fabric #(parameter DIM=32, parameter COST_SIZE=9)
         reg_start_y <= 0;
         reg_load <= 0;
         reg_run <= 0;
+
+        reg_st_cycles <= 0;
+        reg_run_cycles <= 0;
+        reg_ld_cycles <= 0;
     end
 
     always @(posedge clk or negedge arst_n) begin
@@ -282,6 +311,10 @@ module fabric #(parameter DIM=32, parameter COST_SIZE=9)
             reg_start_y <= 0;
             reg_load <= 0;
             reg_run <= 0;
+
+            reg_st_cycles <= 0;
+            reg_run_cycles <= 0;
+            reg_ld_cycles <= 0;
         end else begin
             // load the control register if not running
             if (ctrl_wr) begin
@@ -341,6 +374,30 @@ module fabric #(parameter DIM=32, parameter COST_SIZE=9)
                 7: data_word[31:28] <= curr_dir;
                 endcase
             end
+
+            if (o_clr_cnt_ld) begin
+                reg_ld_cycles <= 0;
+            end
+            else if (cs == ST_FIRST_LOAD || cs == ST_W_FIRST_LOAD ||
+                     cs == ST_LOAD_WEIGHT || cs == ST_W_LOAD) begin
+                reg_ld_cycles <= reg_ld_cycles + 1;
+            end
+
+            if (o_clr_cnt_run) begin
+                reg_run_cycles <= 0;
+            end
+            else if (cs == ST_RUNNING) begin
+                reg_run_cycles <= reg_run_cycles + 1;
+            end
+
+            if (o_clr_cnt_st) begin
+                reg_st_cycles <= 0;
+            end
+            else if (cs == ST_PACK_DIR || cs == ST_W_WRITE ||
+                     cs == ST_W_LAST_WRITE) begin
+                reg_st_cycles <= reg_st_cycles + 1;
+            end
+
 
         end
     end
