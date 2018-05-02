@@ -89,9 +89,9 @@
         wire [31:0] fabric_cnt_ld;
         wire [31:0] fabric_cnt_run;
         wire [31:0] fabric_cnt_st;
-        wire [31:0] fabric_raddr;
-        wire [31:0] fabric_waddr;
-        wire [31:0] fabric_data;
+        wire [31:0] fabric_dbg_raddr;
+        wire [31:0] fabric_dbg_waddr;
+        wire [31:0] fabric_dbg_data;
         wire [31:0] MST_TXN_ADDR;
         wire [31:0] MST_TXN_WDATA;
         wire [31:0] MST_TXN_RDATA;
@@ -118,9 +118,9 @@
             .cnt_ld_cycles(fabric_cnt_ld),
             .cnt_run_cycles(fabric_cnt_run),
             .cnt_st_cycles(fabric_cnt_st),
-            .dbg_raddr(fabric_raddr),
-            .dbg_waddr(fabric_waddr),
-            .dbg_data(fabric_data),
+            .dbg_raddr(fabric_dbg_raddr),
+            .dbg_waddr(fabric_dbg_waddr),
+            .dbg_data(fabric_dbg_data),
 
             .txn_rdy(MST_TXN_DATA_VALID),
             .txn_rdata(MST_TXN_RDATA),
