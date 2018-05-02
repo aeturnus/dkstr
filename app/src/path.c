@@ -223,15 +223,22 @@ static void gen_path(graph * graph, const coord * start, const coord * end,
 
 // utilize the map to generate paths
 void path_find(const map * map, const coord * start, const coord * end,
-               path * path)
+               path * path, prof * prof)
 {
     queue queue;
     graph graph;
 
+    // no tx or rx time
+    prof_ctor(prof);
+
+    prof_start(prof);
     path_ctor(path);
     gen_graph(&graph, map);
     queue_ctor(&queue, &graph);
+    prof_end(prof); prof->prproc = prof_dt(prof);
 
+
+    prof_start(prof);
     coord curr = *start;
     graph_node(&graph, curr.x, curr.y).cost = 0;
 
@@ -275,9 +282,12 @@ void path_find(const map * map, const coord * start, const coord * end,
         }
         graph_node(&graph, curr.x, curr.y).visit = 1;
     }
+    prof_end(prof); prof->exec = prof_dt(prof);
 
     // generate the path
+    prof_start(prof);
     gen_path(&graph, start, end, path);
+    prof_end(prof); prof->poproc = prof_dt(prof);
 }
 
 void ppath_find(const map * map, const coord * start, const coord * end,

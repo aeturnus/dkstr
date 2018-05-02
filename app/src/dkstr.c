@@ -14,6 +14,8 @@
 #include "world.h"
 #include "path.h"
 
+#include "prof.h"
+
 extern const int32_t cost_table[128];
 void draw_map(const map * map)
 {
@@ -192,8 +194,10 @@ void hw_gen_path(int w, int h, const coord * start, const coord * end,
 #define CTRL_Y_SHF (5)
 #define CTRL_X_SHF (0)
 int hw_pathfind(const map * map, const coord * start, const coord * end, path * path,
-                uint32_t * bram_map, uint32_t * bram_dir, uint32_t * dkstr)
+                uint32_t * bram_map, uint32_t * bram_dir, volatile uint32_t * dkstr,
+                prof * prof)
 {
+    prof_start(prof);
     // since 8 node weights fit into a single word, figure out how
     // many words we need
     int buff_n = 0;
@@ -202,14 +206,17 @@ int hw_pathfind(const map * map, const coord * start, const coord * end, path * 
         buff_n += 1; // compensate if not aligned
 
     uint32_t * map_buffer = (uint32_t *) malloc(sizeof(uint32_t) * buff_n);
-    //uint32_t * dir_buffer = (uint32_t *) malloc(sizeof(uint32_t) * buff_n);
 
     convert_map(map, map_buffer);
+    prof_end(prof); prof->prproc += prof_dt(prof);
 
     // transfer node weights to bram
+    prof_start(prof);
     memcpy(bram_map, map_buffer, sizeof(uint32_t) * buff_n);
+    prof_end(prof); prof->tx += prof_dt(prof);
 
     // setup the ctrl reg value and program
+    prof_start(prof);
     uint32_t ctrl = CTRL_RUN | CTRL_LD |
                     (start->y & CTRL_Y_MASK) << CTRL_Y_SHF |
                     (start->x & CTRL_X_MASK) << CTRL_X_SHF;
@@ -219,11 +226,28 @@ int hw_pathfind(const map * map, const coord * start, const coord * end, path * 
     int loops = 0;
     while ((*dkstr) & CTRL_RUN)
         ++loops;
+    prof_end(prof); prof->exec += prof_dt(prof);
     printf("poll loops: %d\n", loops);
 
-    // TODO: generate path
+    ///*
+    // transfer back
+    prof_start(prof);
+    uint32_t * dir_buffer = (uint32_t *) malloc(sizeof(uint32_t) * buff_n);
+    memcpy(dir_buffer, bram_dir, sizeof(uint32_t) * buff_n);
+    prof_end(prof); prof->rx += prof_dt(prof);
+    prof_start(prof);
+    hw_gen_path(map->w, map->h, start, end, dir_buffer, path);
+    prof_end(prof); prof->poproc += prof_dt(prof);
+    free(dir_buffer);
+    //*/
+    /*
+    // work with BRAM directly
+    prof_start(prof);
     hw_gen_path(map->w, map->h, start, end, bram_dir, path);
-    // could also load path
+    // could also load path: slower
+    // path_load(map, start, end, bram_dir, path);
+    prof_end(prof); prof->poproc += prof_dt(prof);
+    */
 
     free(map_buffer);
     return 0;
@@ -238,6 +262,9 @@ int play_map(const char * map_path, int hw, const coord * start, const coord * e
         fprintf(stderr, "ERROR: unable to open map %s\n", map_path);
         return 1;
     }
+
+    prof prof;
+    prof_ctor(&prof);
     if (hw) {
         /// TODO
         mem_context mem_bram, mem_dkstr;
@@ -246,15 +273,16 @@ int play_map(const char * map_path, int hw, const coord * start, const coord * e
         uint32_t * bram_map = mem_addr(&mem_bram, (void*)(uintptr_t) 0x40000000);
         uint32_t * bram_dir = mem_addr(&mem_bram, (void*)(uintptr_t) 0x40001000);
         uint32_t * dkstr = mem_addr(&mem_dkstr, (void*)(uintptr_t) 0x40004000);
-        hw_pathfind(&map, start, end, &path, bram_map, bram_dir, dkstr);
+        hw_pathfind(&map, start, end, &path, bram_map, bram_dir, dkstr, &prof);
         mem_dtor(&mem_bram);
         mem_dtor(&mem_dkstr);
     }
     else {
-        path_find(&map, start, end, &path);
+        path_find(&map, start, end, &path, &prof);
     }
     ncurses_play(&map, &path, start);
 
+    prof_print(&prof);
     path_dtor(&path);
     return 0;
 }
@@ -299,7 +327,7 @@ int main(int argc, char * argv[])
         return play_map(argv[2], hw, &start, &end);
     }
     else {
-        fprintf("ERROR: invalid command %s\n", argv[1]);
+        fprintf(stderr, "ERROR: invalid command %s\n", argv[1]);
         return 1;
     }
 }

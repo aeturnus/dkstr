@@ -10,6 +10,7 @@ extern "C" {
 #include <btn/vector.h>
 
 #include "world.h"
+#include "prof.h"
 
 typedef struct path_
 {
@@ -20,7 +21,7 @@ typedef struct path_
 void path_ctor(path * path);
 void path_dtor(path * path);
 void path_find(const map * map, const coord * start, const coord * end,
-               path * path);
+               path * path, prof * prof);
 void ppath_find(const map * map, const coord * start, const coord * end,
                path * path);
 

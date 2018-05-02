@@ -10,8 +10,8 @@ CXX = g++
 LD = ld
 AR = ar
 
-OPT=-O0
-CFLAGS = -Wall -Wextra -Wno-unused-parameter -std=c99 -g -pg $(OPT)
+OPT=-O3
+CFLAGS = -Wall -Wextra -Wno-unused-parameter -std=gnu99 -g -pg $(OPT)
 LIBS   = -L$(LIBDIR) -lmem -lbtn -lncurses
 INCLUDE = -I$(PROOT)/inc -I$(EXTDIR)/libmem/inc -I$(EXTDIR)/libbtn/inc
 
