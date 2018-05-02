@@ -10,8 +10,9 @@ CXX = g++
 LD = ld
 AR = ar
 
-CFLAGS = -Wall -Wextra -Wno-unused-parameter -std=c99 -g 
-LIBS   = -L$(LIBDIR) -lmem -lbtn
+OPT=-O0
+CFLAGS = -Wall -Wextra -Wno-unused-parameter -std=c99 -g -pg $(OPT)
+LIBS   = -L$(LIBDIR) -lmem -lbtn -lncurses
 INCLUDE = -I$(PROOT)/inc -I$(EXTDIR)/libmem/inc -I$(EXTDIR)/libbtn/inc
 
 LIB_DEPEND = $(LIBDIR)/libmem.a $(LIBDIR)/libbtn.a
