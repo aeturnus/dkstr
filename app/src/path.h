@@ -24,6 +24,9 @@ void path_find(const map * map, const coord * start, const coord * end,
 void ppath_find(const map * map, const coord * start, const coord * end,
                path * path);
 
+void path_load(const map * map, const coord * start, const coord * end,
+               const uint32_t * buffer, path * path);
+
 #ifdef __cplusplus
 }
 #endif

@@ -391,3 +391,36 @@ coord path_play(path * path, const map * map, const char * path_path, const coor
 
     return start;
 }
+
+void path_load(const map * map, const coord * start, const coord * end,
+               const uint32_t * buffer, path * path)
+{
+    path_ctor(path);
+    uint32_t val;
+    int count = 0;
+    // generate a graph from this
+    graph graph;
+    gen_graph(&graph, map);
+    for (int r = 0; r < map->h; ++r) {
+        for (int c = 0; c < map->w; ++c) {
+            if (count == 0) {
+                val = *buffer;
+                ++buffer;
+            }
+            uint8_t dir = val & 0xF;
+            val >>= 4;
+            node * n = graph_ref(&graph, c, r);
+            if (dir & 8) {
+                dir = dir & 0x7;
+                n->dir_x = acceldirs[dir][0];
+                n->dir_y = acceldirs[dir][1];
+            } else {
+                n->dir_x = DIR_H;
+                n->dir_y = DIR_H;
+            }
+            count = (count + 1) % 8;
+        }
+    }
+
+    gen_path(&graph, start, end, path);
+}
