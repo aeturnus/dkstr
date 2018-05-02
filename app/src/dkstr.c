@@ -109,10 +109,27 @@ int dump_map(const char * map_path)
     return 0;
 }
 
+int dump_path(const char * path_path)
+{
+    mem_context mem_bram;
+    mem_ctor(&mem_bram, MEM_MMAP, 1, (void*)(uintptr_t) 0x40001000, (void*)(uintptr_t) 0x40001fff);
+    uint32_t * bram = mem_addr(&mem_bram, (void*)(uintptr_t) 0x40001000);
+
+    FILE * file = fopen(path_path, "r");
+    uint32_t val = 0;
+    while (fscanf(file, "%08x", &val)) {
+        *bram = val;
+        ++bram;
+    }
+    fclose(file);
+
+    mem_dtor(&mem_bram);
+}
+
 // gets the 4-bit dir code from a buffer
 //#define hw_get(buffer,x,y) ( ((x)*(y)))
 static inline
-uint8_t hw_get(uint32_t * buffer, int w, int h, int x, int y)
+uint8_t hw_get(const uint32_t * buffer, int w, int h, int x, int y)
 {
     // convert into a linear index into w*h*8 4-bit buffer
     int lindex = x + y *h;
@@ -244,20 +261,24 @@ int play_map(const char * map_path, int hw, const coord * start, const coord * e
 
 int main(int argc, char * argv[])
 {
-    printf("Hello world!\n");
-
     if (argc < 2) {
         fprintf(stderr, "ERROR: please provide command\n");
         return 1;
     }
 
     if (!strcmp("dump", argv[1])) {
-
         if (argc <= 2) {
             fprintf(stderr, "ERROR: dkstr dump <map path>\n");
             return 1;
         }
         return dump_map(argv[2]);
+    }
+    else if (!strcmp("dump_path", argv[1])) {
+        if (argc <= 2) {
+            fprintf(stderr, "ERROR: dkstr dump <path hexdump path>\n");
+            return 1;
+        }
+        return dump_path(argv[2]);
     }
     // dkstr play <map_path> <start_x> <start_y> <end_x> <end_y> [sw,hw; default sw]
     else if (!strcmp("play", argv[1])) {
@@ -276,5 +297,9 @@ int main(int argc, char * argv[])
             hw = 1;
 
         return play_map(argv[2], hw, &start, &end);
+    }
+    else {
+        fprintf("ERROR: invalid command %s\n", argv[1]);
+        return 1;
     }
 }
