@@ -33,6 +33,9 @@
         input  wire [31:0] FABRIC_CNT_LD,
         input  wire [31:0] FABRIC_CNT_RUN,
         input  wire [31:0] FABRIC_CNT_ST,
+        input  wire [31:0] FABRIC_DBG_RADDR,
+        input  wire [31:0] FABRIC_DBG_WADDR,
+        input  wire [31:0] FABRIC_DBG_DATA,
 
 		// Global Clock Signal
 		input wire  S_AXI_ACLK,
@@ -681,10 +684,10 @@
 	        5'h01   : reg_data_out <= FABRIC_CNT_LD;
 	        5'h02   : reg_data_out <= FABRIC_CNT_RUN;
 	        5'h03   : reg_data_out <= FABRIC_CNT_ST;
-	        5'h04   : reg_data_out <= 32'hcafed0d0;
-	        5'h05   : reg_data_out <= 0;
-	        5'h06   : reg_data_out <= 0;
-	        5'h07   : reg_data_out <= 0;
+	        5'h04   : reg_data_out <= FABRIC_DBG_RADDR;
+	        5'h05   : reg_data_out <= FABRIC_DBG_WADDR;
+	        5'h06   : reg_data_out <= FABRIC_DBG_DATA;
+	        5'h07   : reg_data_out <= 32'hcafed0d0;
 	        5'h08   : reg_data_out <= 0;
 	        5'h09   : reg_data_out <= 0;
 	        5'h0A   : reg_data_out <= 0;

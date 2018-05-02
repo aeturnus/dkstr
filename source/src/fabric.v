@@ -20,6 +20,11 @@ module fabric #(parameter DIM=32, parameter COST_SIZE=9,
         output  wire    [31:0]  cnt_run_cycles,
         output  wire    [31:0]  cnt_st_cycles,
 
+        // debug regs
+        output  wire    [31:0]  dbg_raddr,
+        output  wire    [31:0]  dbg_waddr,
+        output  wire    [31:0]  dbg_data,
+
         // memory interface
         input                   txn_rdy,
         input   wire    [31:0]  txn_rdata,
@@ -91,6 +96,9 @@ module fabric #(parameter DIM=32, parameter COST_SIZE=9,
     wire [31:0] addr_rd, addr_wr;
     assign addr_rd = ADDR_MAP + (addr_off << 2);
     assign addr_wr = ADDR_DIR + (addr_off << 2);
+    assign dbg_raddr = addr_rd;
+    assign dbg_waddr = addr_wr;
+    assign dbg_data  = data_word;
 
     // SM outputs
     reg o_clr_curr;         // clear the curr register
