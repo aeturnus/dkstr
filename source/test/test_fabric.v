@@ -88,7 +88,7 @@ module test_fabric();
         f = $fopen("paths.hex","w");
         $fdisplay(f, "%08x", fabric.reg_start_x);
         $fdisplay(f, "%08x", fabric.reg_start_y);
-        for (i = 0; i < N; i = i + 1) begin
+        for (i = 0; i < N/8; i = i + 1) begin
             $fdisplay(f, "%08x", memory.chip1[i]);
         end
 
