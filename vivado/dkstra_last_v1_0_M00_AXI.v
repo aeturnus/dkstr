@@ -509,7 +509,8 @@
 	      begin
 	        if (M_AXI_ARESETN == 0  || init_txn_pulse == 1'b1)
 	          begin
-	            axi_awaddr <= waddr_delay;
+	            //axi_awaddr <= waddr_delay;
+	            axi_awaddr <= TXN_WADDR;
 	          end
 	          // Signals a new write address/ write data is
 	          // available by user logic
@@ -525,13 +526,15 @@
 	      begin
 	        if (M_AXI_ARESETN == 0 || init_txn_pulse == 1'b1 )
 	          begin
-	            axi_wdata <= wdata_delay;
+	            //axi_wdata <= wdata_delay;
+	            axi_wdata <= TXN_WDATA;
 	          end
 	        // Signals a new write address/ write data is
 	        // available by user logic
 	        else if (M_AXI_WREADY && axi_wvalid)
 	          begin
-	            axi_wdata <= wdata_delay;
+	            //axi_wdata <= wdata_delay;
+	            axi_wdata <= TXN_WDATA;
 	          end
 	        end
 
@@ -540,7 +543,8 @@
 	      begin
 	        if (M_AXI_ARESETN == 0  || init_txn_pulse == 1'b1)
 	          begin
-	            axi_araddr <= raddr_delay;
+	            //axi_araddr <= raddr_delay;
+	            axi_araddr <= TXN_RADDR;
 	          end
 	          // Signals a new write address/ write data is
 	          // available by user logic
