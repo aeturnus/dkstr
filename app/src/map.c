@@ -48,7 +48,7 @@ void map_dtor(map * map)
     free(map->buffer);
 }
 
-static void map_gen_border(map * map) 
+static void map_gen_border(map * map)
 {
     // top border
     for (int i = 1; i < map->w - 1; i++) {
@@ -72,14 +72,22 @@ static void map_gen_border(map * map)
     }
 }
 
-void map_rand(map * map, int seed, int width, int height) 
+static unsigned int sv_seed;
+
+void map_seed(unsigned int seed)
+{
+    sv_seed = seed;
+}
+
+void map_rand(map * map, int width, int height)
 {
     // initialize the map struct
     map->w = width;
     map->h = height;
+    map->buffer = (char *) malloc(sizeof(char) * height * width);
 
     // seed the random number generator
-    srand(seed);
+    rand_r(&sv_seed);
 
     // fill in the border
     map_gen_border(map);
@@ -87,9 +95,9 @@ void map_rand(map * map, int seed, int width, int height)
     // generate weighted random symbols for each cell in the map
     // 80% for ' ', 10% for '#', 10% for '@'
     int total_tickets = 100;
-#define NUM_SYMBOLS   3 // TODO: make this parametrized?
+    #define NUM_SYMBOLS   3 // TODO: make this parametrized?
     int symbols[NUM_SYMBOLS] = { ' ', '#', '@' }; // TODO: make this parametrized?
-    double weights[NUM_SYMBOLS] = { 0.24, 0.38, 0.38 }; // TODO: make this parametrized?
+    double weights[NUM_SYMBOLS] = { 0.50, 0.40, 0.10}; // TODO: make this parametrized?
     double tickets[NUM_SYMBOLS];
     for (int i = 0; i < NUM_SYMBOLS; i++) {
         tickets[i] = weights[i] * total_tickets;
@@ -115,11 +123,11 @@ void map_rand(map * map, int seed, int width, int height)
     int seed = 1;
     int width = 28;
     int height = 28;
-    
+
     map map;
     map.buffer = (uint8_t*) malloc(width * height * sizeof(uint8_t));
     map_rand(&map, seed, width, height);
-    
+
     for (int i = 0; i < map.w * map.h; i++) {
         printf("%c", map.buffer[i]);
         if (i % map.w == map.w-1) {

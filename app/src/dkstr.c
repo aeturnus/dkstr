@@ -279,7 +279,10 @@ int play_map(const char * map_path, int hw, const coord * start, const coord * e
     map map;
     path path;
 
-    if (map_load(&map, map_path)) {
+    if (map_path == NULL) {
+        map_rand(&map, 28, 28);
+    }
+    else if (map_load(&map, map_path)) {
         fprintf(stderr, "ERROR: unable to open map %s\n", map_path);
         return 1;
     }
@@ -346,6 +349,26 @@ int main(int argc, char * argv[])
             hw = 1;
 
         return play_map(argv[2], hw, &start, &end);
+    } else if (!strcmp("rand", argv[1])) {
+        if (argc <= 6) {
+            fprintf(stderr, "ERROR: dkstr rand <seed> <start_x> <start_y> <end_x> <end_y> [sw,hw; default sw]\n");
+        }
+
+        coord start, end;
+        unsigned int seed;
+
+        sscanf(argv[2], "%u", &seed);
+        sscanf(argv[3], "%d", &start.x);
+        sscanf(argv[4], "%d", &start.y);
+        sscanf(argv[5], "%d", &end.x);
+        sscanf(argv[6], "%d", &end.y);
+
+        int hw = 0;
+        if (argc > 7 && !strcmp("hw",argv[7]))
+            hw = 1;
+
+        map_seed(seed);
+        return play_map(NULL, hw, &start, &end);
     }
     else {
         fprintf(stderr, "ERROR: invalid command %s\n", argv[1]);

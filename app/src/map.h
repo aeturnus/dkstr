@@ -30,6 +30,9 @@ int map_load(map * map, const char * file_name);
 void map_copy(map * dst, const map * src);
 void map_dtor(map * map);
 
+void map_seed(unsigned int seed);
+void map_rand(map * map, int width, int height);
+
 #ifdef __cplusplus
 }
 #endif
