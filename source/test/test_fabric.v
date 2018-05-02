@@ -8,12 +8,13 @@ module test_fabric();
     always #5 clk = ~clk;
 
     wire req, wr, data_rdy;
-    wire [31:0] addr, data_wr, data_rd;
+    wire [31:0] raddr, waddr, data_wr, data_rd;
     mem memory(
             .clk(clk),
             .req(req),
             .wr(wr),
-            .addr(addr),
+            .waddr(waddr),
+            .raddr(raddr),
             .data_wr(data_wr),
             .data_rd(data_rd),
             .data_rdy(data_rdy)
@@ -42,7 +43,8 @@ module test_fabric();
 
             .txn_req(req),
             .txn_wr(wr),
-            .txn_addr(addr),
+            .txn_waddr(waddr),
+            .txn_raddr(raddr),
             .txn_wdata(data_wr),
             .txn_rdata(data_rd),
             .txn_rdy(data_rdy),
@@ -106,7 +108,8 @@ module mem(
         input   wire    clk,
         input   wire    req,
         input   wire    wr,
-        input   wire [31:0] addr,
+        input   wire [31:0] raddr,
+        input   wire [31:0] waddr,
         input   wire [31:0] data_wr,
         output  reg  [31:0] data_rd,
         output  reg         data_rdy
@@ -133,13 +136,13 @@ module mem(
         0: begin
             data_rdy <= 1;
             if (req && !wr) begin
-                rd_addr <= ((addr - 32'h40000000) >> 2);
+                rd_addr <= ((raddr - 32'h40000000) >> 2);
                 cs <= 1;
                 data_rdy <= 0;
                 cnt <= CNT;
             end
             else if (req && wr) begin
-                wr_addr <= ((addr - 32'h40001000) >> 2);
+                wr_addr <= ((waddr - 32'h40001000) >> 2);
                 wr_data <= data_wr;
                 cs <= 2;
                 data_rdy <= 0;

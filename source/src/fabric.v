@@ -21,15 +21,14 @@ module fabric #(parameter DIM=32, parameter COST_SIZE=9,
         output  wire    [31:0]  cnt_st_cycles,
 
         // debug regs
-        output  wire    [31:0]  dbg_raddr,
-        output  wire    [31:0]  dbg_waddr,
         output  wire    [31:0]  dbg_data,
 
         // memory interface
         input                   txn_rdy,
         input   wire    [31:0]  txn_rdata,
         output  wire    [31:0]  txn_wdata,
-        output  reg     [31:0]  txn_addr,
+        output  wire    [31:0]  txn_raddr,
+        output  wire    [31:0]  txn_waddr,
         output  reg             txn_req,
         output  reg             txn_wr,
 
@@ -94,10 +93,8 @@ module fabric #(parameter DIM=32, parameter COST_SIZE=9,
     assign txn_wdata = data_word;
 
     wire [31:0] addr_rd, addr_wr;
-    assign addr_rd = ADDR_MAP + (addr_off << 2);
-    assign addr_wr = ADDR_DIR + (addr_off << 2);
-    assign dbg_raddr = addr_rd;
-    assign dbg_waddr = addr_wr;
+    assign txn_raddr = ADDR_MAP + (addr_off << 2);
+    assign txn_waddr = ADDR_DIR + (addr_off << 2);
     assign dbg_data  = data_word;
 
     // SM outputs
@@ -280,17 +277,14 @@ module fabric #(parameter DIM=32, parameter COST_SIZE=9,
         endcase
 
         if (o_init_rd) begin
-            txn_addr = addr_rd;
             txn_req = 1;
             txn_wr = 0;
         end
         else if (o_init_wr) begin
-            txn_addr = addr_wr;
             txn_req = 1;
             txn_wr = 1;
         end
         else begin
-            txn_addr = addr_rd;
             txn_req = 0;
             txn_wr = 0;
         end

@@ -92,7 +92,8 @@
         wire [31:0] fabric_dbg_raddr;
         wire [31:0] fabric_dbg_waddr;
         wire [31:0] fabric_dbg_data;
-        wire [31:0] MST_TXN_ADDR;
+        wire [31:0] MST_TXN_RADDR;
+        wire [31:0] MST_TXN_WADDR;
         wire [31:0] MST_TXN_WDATA;
         wire [31:0] MST_TXN_RDATA;
 
@@ -118,14 +119,13 @@
             .cnt_ld_cycles(fabric_cnt_ld),
             .cnt_run_cycles(fabric_cnt_run),
             .cnt_st_cycles(fabric_cnt_st),
-            .dbg_raddr(fabric_dbg_raddr),
-            .dbg_waddr(fabric_dbg_waddr),
             .dbg_data(fabric_dbg_data),
 
             .txn_rdy(MST_TXN_DATA_VALID),
             .txn_rdata(MST_TXN_RDATA),
             .txn_wdata(MST_TXN_WDATA),
-            .txn_addr(MST_TXN_ADDR),
+            .txn_raddr(MST_TXN_RADDR),
+            .txn_waddr(MST_TXN_WADDR),
             .txn_req(MST_INIT_AXI_TXN),
             .txn_wr(MST_TXN_WTXN),
 
@@ -154,8 +154,8 @@
         .FABRIC_CNT_LD(fabric_cnt_ld),
         .FABRIC_CNT_RUN(fabric_cnt_run),
         .FABRIC_CNT_ST(fabric_cnt_st),
-        .FABRIC_DBG_RADDR(fabric_dbg_raddr),
-        .FABRIC_DBG_WADDR(fabric_dbg_waddr),
+        .FABRIC_DBG_RADDR(MST_TXN_RADDR),
+        .FABRIC_DBG_WADDR(MST_TXN_WADDR),
         .FABRIC_DBG_DATA(fabric_dbg_data),
 
 		.S_AXI_ACLK(s00_axi_aclk),
@@ -191,7 +191,8 @@
 	) dkstra_w_masterlite_v1_0_M00_AXI_inst (
 
 
-        .TXN_ADDR(MST_TXN_ADDR),
+        .TXN_WADDR(MST_TXN_WADDR),
+        .TXN_RADDR(MST_TXN_RADDR),
         .TXN_WDATA(MST_TXN_WDATA),
         .TXN_RDATA(MST_TXN_RDATA),
         .TXN_DATA_VALID(MST_TXN_DATA_VALID),

@@ -25,7 +25,8 @@
 	)
 	(
 		// Users to add ports here
-		input wire [31:0] TXN_ADDR,
+		input wire [31:0] TXN_WADDR,
+		input wire [31:0] TXN_RADDR,
         input wire [31:0] TXN_WDATA,
         output wire [31:0] TXN_RDATA,
 
@@ -188,6 +189,11 @@
 	reg  	init_txn_edge;
 	wire  	init_txn_pulse;
 
+    // pulse the wr txn to be seen on the next cycle
+    reg  	wr_txn_ff;
+	reg  	wr_txn_ff2;
+	wire  	wr_txn_pulse;
+
 
 	// I/O Connections assignments
 	//
@@ -239,6 +245,7 @@
 
 
 	assign init_txn_pulse	= (!init_txn_ff2) && init_txn_ff;
+	assign wr_txn_pulse	    = (!wr_txn_ff2) && wr_txn_ff;
 
 
 	//Generate a pulse to initiate AXI transaction.
@@ -249,11 +256,17 @@
 	      begin
 	        init_txn_ff <= 1'b0;
 	        init_txn_ff2 <= 1'b0;
+
+            wr_tx_ff <= 1'b0;
+            wr_tx_ff2 <= 1'b0;
 	      end
 	    else
 	      begin
 	        init_txn_ff <= INIT_AXI_TXN;
 	        init_txn_ff2 <= init_txn_ff;
+
+            wr_txn_ff <= TXN_WTXN;
+            wr_txn_ff2 <= wr_txn_ff;
 	      end
 	  end
 
@@ -419,8 +432,7 @@
 	  // transaction
 	  always @(posedge M_AXI_ACLK)
 	  begin
-	    if (M_AXI_ARESETN == 0 || init_txn_pulse == 1'b1)
-	      begin
+	    if (M_AXI_ARESETN == 0 || init_txn_pulse == 1'b1) begin
 	        axi_arvalid <= 1'b0;
 	      end
 	    //Signal a new read address command is available by user logic
@@ -486,7 +498,7 @@
 	      begin
 	        if (M_AXI_ARESETN == 0  || init_txn_pulse == 1'b1)
 	          begin
-	            axi_awaddr <= TXN_ADDR;
+	            axi_awaddr <= TXN_WADDR;
 	          end
 	          // Signals a new write address/ write data is
 	          // available by user logic
@@ -517,7 +529,7 @@
 	      begin
 	        if (M_AXI_ARESETN == 0  || init_txn_pulse == 1'b1)
 	          begin
-	            axi_araddr <= TXN_ADDR;
+	            axi_araddr <= TXN_RADDR;
 	          end
 	          // Signals a new write address/ write data is
 	          // available by user logic
@@ -571,7 +583,7 @@
 	            if ( init_txn_pulse == 1'b1 )
 	              begin
                     txn_valid_reg <= 1'b0;
-                    if( TXN_WTXN == 1'b1)
+                    if( wr_txn_pulse == 1'b1)
                     begin
                         mst_exec_state  <= INIT_WRITE;
                     end else begin
