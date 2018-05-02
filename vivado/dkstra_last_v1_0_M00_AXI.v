@@ -194,6 +194,9 @@
 	reg  	wr_txn_ff2;
 	wire  	wr_txn_pulse;
 
+    // delayed addr registers
+    reg [31:0] waddr_delay, raddr_delay, wdata_delay;
+
 
 	// I/O Connections assignments
 	//
@@ -257,8 +260,12 @@
 	        init_txn_ff <= 1'b0;
 	        init_txn_ff2 <= 1'b0;
 
-            wr_tx_ff <= 1'b0;
-            wr_tx_ff2 <= 1'b0;
+            wr_txn_ff <= 1'b0;
+            wr_txn_ff2 <= 1'b0;
+
+            waddr_delay <= 32'h0;
+            raddr_delay <= 32'h0;
+            wdata_delay <= 32'h0;
 	      end
 	    else
 	      begin
@@ -267,6 +274,10 @@
 
             wr_txn_ff <= TXN_WTXN;
             wr_txn_ff2 <= wr_txn_ff;
+
+            waddr_delay <= TXN_WADDR;
+            raddr_delay <= TXN_RADDR;
+            wdata_delay <= TXN_WDATA;
 	      end
 	  end
 
@@ -498,7 +509,7 @@
 	      begin
 	        if (M_AXI_ARESETN == 0  || init_txn_pulse == 1'b1)
 	          begin
-	            axi_awaddr <= TXN_WADDR;
+	            axi_awaddr <= waddr_delay;
 	          end
 	          // Signals a new write address/ write data is
 	          // available by user logic
@@ -514,13 +525,13 @@
 	      begin
 	        if (M_AXI_ARESETN == 0 || init_txn_pulse == 1'b1 )
 	          begin
-	            axi_wdata <= TXN_WDATA;
+	            axi_wdata <= wdata_delay;
 	          end
 	        // Signals a new write address/ write data is
 	        // available by user logic
 	        else if (M_AXI_WREADY && axi_wvalid)
 	          begin
-	            axi_wdata <= TXN_WDATA;
+	            axi_wdata <= wdata_delay;
 	          end
 	        end
 
@@ -529,7 +540,7 @@
 	      begin
 	        if (M_AXI_ARESETN == 0  || init_txn_pulse == 1'b1)
 	          begin
-	            axi_araddr <= TXN_RADDR;
+	            axi_araddr <= raddr_delay;
 	          end
 	          // Signals a new write address/ write data is
 	          // available by user logic
