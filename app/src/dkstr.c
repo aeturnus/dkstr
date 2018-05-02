@@ -67,39 +67,63 @@ void ncurses_play(const map * map, const path * path,
     printf("Total cost: %d.%d\n", cost >> 1, (cost & 1) ? 5 : 0);
 }
 
-int dump_map(const char * map_path)
+void convert_map(const map * map, uint32_t * buffer)
 {
-    mem_context mem_bram;
-    mem_ctor(&mem_bram, MEM_MMAP, 1, (void*)(uintptr_t) 0x40000000, (void*)(uintptr_t) 0x40000fff);
-
-    uint32_t * bram = mem_addr(&mem_bram, (void*)(uintptr_t) 0x40000000);
-
-    map map;
-    map_load(&map, map_path);
     uint32_t value = 0;
     int count = 0;
-    for (int r = 0; r < 32; ++r) {
-        for (int c = 0; c < 32; ++c) {
+    for (int r = 0; r < map->w; ++r) {
+        for (int c = 0; c < map->h; ++c) {
             uint8_t cost;
-            if (cost_table[map_get(&map,c,r)] == 0xDEADBEEF)
+            if (cost_table[map_get(map,c,r)] == 0xDEADBEEF)
                 cost = 0xF;
             else
-                cost = cost_table[map_get(&map,c,r)] & 0xF;
+                cost = cost_table[map_get(map,c,r)] & 0xF;
 
             value |= cost << (count * 4);
 
             if (count == 7) {
                 count = 0;
-                *bram = value;
-                bram++;
+                *buffer = value;
+                ++buffer;
                 value = 0;
             } else {
                 ++count;
             }
         }
     }
+}
+
+int dump_map(const char * map_path)
+{
+    mem_context mem_bram;
+    mem_ctor(&mem_bram, MEM_MMAP, 1, (void*)(uintptr_t) 0x40000000, (void*)(uintptr_t) 0x40000fff);
+
+
+    map map;
+    map_load(&map, map_path);
+
+    uint32_t * bram = mem_addr(&mem_bram, (void*)(uintptr_t) 0x40000000);
+    convert_map(&map, bram);
+
     map_dtor(&map);
     mem_dtor(&mem_bram);
+    return 0;
+}
+
+int hw_pathfind(const map * map, const coord * start, const coord * end, path * path)
+{
+    // since 8 node weights fit into a single word, figure out how
+    // many words we need
+    int buff_size = 0;
+    buff_size = (map->w * map->h) / 8;
+    if ((map->w * map->h) % 8 != 0)
+        buff_size += 1; // compensate if not aligned
+
+    uint32_t * buffer = (uint32_t *) malloc(sizeof(uint32_t) * buff_size);
+
+    convert_map(map, buffer);
+
+    free(buffer);
     return 0;
 }
 
@@ -109,16 +133,20 @@ int play_map(const char * map_path, int hw, const coord * start, const coord * e
     path path;
 
     if (map_load(&map, map_path)) {
-        fprintf("ERROR: unable to open map %s\n", map_path);
+        fprintf(stderr, "ERROR: unable to open map %s\n", map_path);
         return 1;
     }
     if (hw) {
         /// TODO
+        hw_pathfind(&map, start, end, &path);
     }
     else {
         path_find(&map, start, end, &path);
-        ncurses_play(&map, &path, start);
     }
+    ncurses_play(&map, &path, start);
+
+    path_dtor(&path);
+    return 0;
 }
 
 int main(int argc, char * argv[])
