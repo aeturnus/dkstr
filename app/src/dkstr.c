@@ -130,23 +130,53 @@ int put_path(const char * path_path)
     return 0;
 }
 
+const char char_dirs[8] =
+{
+    '^',
+    '/',
+    '>',
+    '\\',
+    'v',
+    ',',
+    '<',
+    '`'
+};
+
+int print_path_file(const char * path, int w, int h)
+{
+    FILE * file = fopen(path, "r");
+
+    uint32_t val;
+    uint8_t count = 0;
+    for (int r = 0; r < h; ++r) {
+        for (int c = 0; c < w; ++c) {
+            if (count == 0) {
+                fscanf(file, "%08x", &val);
+            }
+
+            uint8_t dir = val & 0xF;
+            if (dir & 0x8) {
+                dir &= 0x7;
+                putchar(char_dirs[dir]);
+            }
+            else {
+                putchar('@');
+            }
+            val >>= 4;
+            count = (count + 1) % 8;
+        }
+        printf("\n");
+    }
+
+    fclose(file);
+    return 0;
+}
+
 int print_path(int w, int h)
 {
     mem_context mem_bram;
     mem_ctor(&mem_bram, MEM_MMAP, 1, (void*)(uintptr_t) 0x40001000, (void*)(uintptr_t) 0x40001fff);
     uint32_t * bram = mem_addr(&mem_bram, (void*)(uintptr_t) 0x40001000);
-
-    static const char char_dirs[8] =
-    {
-        '^',
-        '/',
-        '>',
-        '\\',
-        'v',
-        ',',
-        '<',
-        '`'
-    };
 
     uint32_t val = 0;
     uint8_t count = 0;
@@ -163,7 +193,7 @@ int print_path(int w, int h)
                 putchar(char_dirs[dir]);
             }
             else {
-                printf(" ");
+                putchar('@');
             }
             val >>= 4;
             count = (count + 1) % 8;
@@ -546,13 +576,16 @@ int main(int argc, char * argv[])
     }
     else if (!strcmp("print_path", argv[1])) {
         if (argc <= 3) {
-            fprintf(stderr, "ERROR: dkstr print_path <width> <height>\n");
+            fprintf(stderr, "ERROR: dkstr print_path <bram for BRAM; path of hexdump> <width> <height>\n");
             return 1;
         }
         int w, h;
-        sscanf(argv[2], "%d", &w);
-        sscanf(argv[3], "%d", &h);
-        return print_path(w,h);
+        sscanf(argv[3], "%d", &w);
+        sscanf(argv[4], "%d", &h);
+        if (!strcmp("bram", argv[2]))
+            return print_path(w,h);
+        else
+            return print_path_file(argv[2],w,h);
     }
     // dkstr play <map_path> <start_x> <start_y> <end_x> <end_y> [sw,hw; default sw]
     else if (!strcmp("play", argv[1])) {
