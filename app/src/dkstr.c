@@ -6,7 +6,10 @@
 
 #include <math.h>
 #include <unistd.h>
+#include <signal.h>
 #include <time.h>
+#include <fcntl.h>
+#include <sys/types.h>
 
 #include <ncurses.h>
 #include <mem/mem.h>
@@ -16,6 +19,84 @@
 #include "path.h"
 
 #include "prof.h"
+
+// signal stuff
+//#define INTERRUPT
+#ifdef INTERRUPT
+int sigio_handled = 0;
+void sig_handler(int signo)
+{
+    if (signo == SIGIO) {
+        sigio_handled = 1;
+    }
+}
+
+#define INT_DEVICE "/dev/dkstr_int"
+int fd;
+int sig_init(void)
+{
+    int status = 0;
+    struct sigaction action;
+    sigemptyset(&action.sa_mask);
+    sigaddset(&action.sa_mask, SIGIO);
+    action.sa_handler = sig_handler;
+    action.sa_flags = 0;
+    sigaction(SIGIO, &action, NULL);
+
+    // acquire the device
+    fd = open(INT_DEVICE, O_RDONLY);
+    if (fd == -1) {
+        fprintf(stderr, "Unable to open " INT_DEVICE "\n");
+        return 1;
+    }
+
+    // setup flags for the device
+    int fc;
+    fc = fcntl(fd, F_SETOWN, getpid());
+    if (fc == -1) {
+        fprintf(stderr, "Unable to SETOWN\n");
+        status = 2;
+        goto cleanup;
+    }
+
+    fc = fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_ASYNC);
+    if (fc == -1) {
+        fprintf(stderr, "Unable to SETFL OASYNC\n");
+        status = 3;
+        goto cleanup;
+    }
+
+    return 0;
+cleanup:
+    close(fd);
+    return status;
+}
+
+void sig_done(void)
+{
+    close(fd);
+}
+
+sigset_t wait_mask, wait_mask_old, wait_mask_most;
+void sig_wait_setup(void)
+{
+    sigio_handled = 0;
+    // need to run this block every time to preven sigsuspend race cond.
+    // this is literally magic
+    sigfillset(&wait_mask);
+    sigfillset(&wait_mask_most);
+    sigdelset(&wait_mask_most, SIGIO);
+    sigdelset(&wait_mask_most, SIGINT);
+    sigprocmask(SIG_SETMASK, &wait_mask, &wait_mask_old);
+}
+
+void sig_wait(void)
+{
+    while (sigio_handled == 0)
+        sigsuspend(&wait_mask_most);
+    sigprocmask(SIG_SETMASK, &wait_mask_old, NULL);
+}
+#endif
 
 extern const int32_t cost_table[128];
 void draw_map(const map * map)
@@ -310,14 +391,21 @@ int hw_pathfind(const map * map, const coord * start, const coord * end, path * 
     uint32_t ctrl = CTRL_RUN | CTRL_LD |
                     (start->y & CTRL_Y_MASK) << CTRL_Y_SHF |
                     (start->x & CTRL_X_MASK) << CTRL_X_SHF;
-    *dkstr = ctrl;
 
+    #if defined(INTERRUPT)
+    // interrupt
+    sig_wait_setup();
+    *dkstr = ctrl;
+    sig_wait();
+    #else
     // poll
+    *dkstr = ctrl;
     int loops = 0;
     while ((*dkstr) & CTRL_RUN)
         ++loops;
-    prof_end(prof); prof->exec += prof_dt(prof);
     //printf("poll loops: %d\n", loops);
+    #endif
+    prof_end(prof); prof->exec += prof_dt(prof);
 
     ///*
     // transfer back
@@ -486,10 +574,17 @@ int profile(unsigned int seed, int hw, int samples)
         end.x = rand_r(&coord_seed) % 28;
         end.y = rand_r(&coord_seed) % 28;
 
-        if (hw)
+        if (hw) {
             hw_pathfind(&map, &start, &end, &path, bram_map, bram_dir, dkstr, &prof);
-        else
+            #ifdef INTERRUPT
+            // sleep so it doesn't choke on interrupts: from lab 2
+            if (i % 10000 == 0)
+                usleep(200000);
+            #endif
+        }
+        else {
             path_find(&map, &start, &end, &path, &prof);
+        }
 
         prproc_samples[i] = prof.prproc;
         tx_samples[i] = prof.tx;
@@ -555,6 +650,11 @@ int profile(unsigned int seed, int hw, int samples)
 
 int main(int argc, char * argv[])
 {
+    #ifdef INTERRUPT
+    if (sig_init())
+        return 1;
+    #endif
+
     if (argc < 2) {
         fprintf(stderr, "ERROR: please provide command\n");
         return 1;
@@ -648,4 +748,8 @@ int main(int argc, char * argv[])
         fprintf(stderr, "ERROR: invalid command %s\n", argv[1]);
         return 1;
     }
+
+    #ifdef INTERRUPT
+    sig_done();
+    #endif
 }
