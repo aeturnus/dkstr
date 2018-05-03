@@ -286,6 +286,20 @@ int print_path(int w, int h)
     return 0;
 }
 
+coord path_play(path * path, const map * map, const char * path_path, const coord * end_p);
+void playback_map(const char * map_path, const char * path_path, const coord * end)
+{
+    map map;
+    path path;
+
+    map_load(&map, map_path);
+    coord start = path_play(&path, &map, path_path, end);
+    ncurses_play(&map, &path, &start);
+
+    path_dtor(&path);
+    map_dtor(&map);
+}
+
 // gets the 4-bit dir code from a buffer
 //#define hw_get(buffer,x,y) ( ((x)*(y)))
 static inline
@@ -687,10 +701,10 @@ int main(int argc, char * argv[])
         else
             return print_path_file(argv[2],w,h);
     }
-    // dkstr play <map_path> <start_x> <start_y> <end_x> <end_y> [sw,hw; default sw]
     else if (!strcmp("play", argv[1])) {
         if (argc <= 6) {
             fprintf(stderr, "ERROR: dkstr play <map_path> <start_x> <start_y> <end_x> <end_y> [sw,hw; default sw]\n");
+            return 1;
         }
 
         coord start, end;
@@ -705,9 +719,22 @@ int main(int argc, char * argv[])
 
         return play_map(argv[2], hw, &start, &end);
     }
+    else if (!strcmp("playback", argv[1])) {
+        if (argc <= 5) {
+            fprintf(stderr, "ERROR: dkstr playback <map_path> <paths_path> <end_x> <end_y>\n");
+            return 1;
+        }
+
+        coord end;
+        sscanf(argv[4], "%d", &end.x);
+        sscanf(argv[5], "%d", &end.y);
+
+        playback_map(argv[2], argv[3], &end);
+    }
     else if (!strcmp("rand", argv[1])) {
         if (argc <= 6) {
             fprintf(stderr, "ERROR: dkstr rand <seed> <start_x> <start_y> <end_x> <end_y> [sw,hw; default sw]\n");
+            return 1;
         }
 
         coord start, end;
@@ -729,6 +756,7 @@ int main(int argc, char * argv[])
     else if (!strcmp("profile", argv[1])) {
         if (argc < 4) {
             fprintf(stderr, "ERROR: dkstr profile <sw, hw> <samples> [seed]\n");
+            return 1;
         }
 
         unsigned int seed = time(NULL);
