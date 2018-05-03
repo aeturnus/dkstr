@@ -90,6 +90,12 @@ void gen_graph(graph * graph, const map * map)
     }
 }
 
+static
+void graph_dtor(graph * graph)
+{
+    free(graph->buffer);
+}
+
 static const int dirs[8][3] =
 {
     // x  ,  y,    cost (Q31.1)
@@ -133,6 +139,12 @@ void queue_ctor(queue * q, graph * g)
     q->enq_idx = 0;
     q->deq_idx = 0;
     q->size    = 0;
+}
+
+static
+void queue_dtor(queue * q)
+{
+    free(q->buffer);
 }
 
 static
@@ -180,7 +192,7 @@ static void gen_path(graph * graph, const coord * start, const coord * end,
         x_dir = graph_node(graph, curr.x, curr.y).dir_x;
         y_dir = graph_node(graph, curr.x, curr.y).dir_y;
         if (x_dir == 0 && y_dir == 0) {
-            printf("failed");
+            //printf("failed");
             return;
         }
 
@@ -287,6 +299,8 @@ void path_find(const map * map, const coord * start, const coord * end,
     // generate the path
     prof_start(prof);
     gen_path(&graph, start, end, path);
+    queue_dtor(&queue);
+    graph_dtor(&graph);
     prof_end(prof); prof->poproc = prof_dt(prof);
 }
 
@@ -347,6 +361,7 @@ void ppath_find(const map * map, const coord * start, const coord * end,
 
     // generate the path
     gen_path(&graph, start, end, path);
+    graph_dtor(&graph);
 }
 
 static const int acceldirs[8][2] =
@@ -398,7 +413,7 @@ coord path_play(path * path, const map * map, const char * path_path, const coor
     }
 
     gen_path(&graph, &start, &end, path);
-
+    graph_dtor(&graph);
     return start;
 }
 
@@ -433,4 +448,5 @@ void path_load(const map * map, const coord * start, const coord * end,
     }
 
     gen_path(&graph, start, end, path);
+    graph_dtor(&graph);
 }
