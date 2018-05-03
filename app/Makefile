@@ -60,10 +60,10 @@ debug: $(BINDIR)/$(BIN)
 	gdb $(BINDIR)/$(BIN)
 
 profile_hw: $(BINDIR)/$(BIN)
-	sudo $(BINDIR)/$(BIN) profile hw 100000
+	sudo $(BINDIR)/$(BIN) profile hw 1000000
 
 profile_sw: $(BINDIR)/$(BIN)
-	sudo $(BINDIR)/$(BIN) profile sw 100000
+	sudo $(BINDIR)/$(BIN) profile sw 1000000
 
 clean:
 	@#rm -rf cscope
