@@ -466,11 +466,15 @@ int hw_pathfind(const map * map, const coord * start, const coord * end, path * 
     uint32_t ld_cycles = dkstr[1];
     uint32_t run_cycles = dkstr[2];
     uint32_t st_cycles = dkstr[3];
+    uint32_t total_cycles = ld_cycles + run_cycles + st_cycles;
 
     /*
-    printf("Cycles spent loading the nodes: %d\n", ld_cycles);
-    printf("Cycles spent executing the nodes: %d\n", run_cycles);
-    printf("Cycles spent storing the nodes: %d\n", st_cycles);
+    printf("Cycles spent loading the nodes: %d (%.2f%%)\n", ld_cycles,
+            (float) ld_cycles / (float) total_cycles * 100.0f);
+    printf("Cycles spent executing the nodes: %d (%.2f%%)\n", run_cycles,
+            (float) run_cycles / (float) total_cycles * 100.0f);
+    printf("Cycles spent storing the nodes: %d (%.2f%%)\n", st_cycles,
+            (float) st_cycles / (float) total_cycles * 100.0f);
     */
     /*
     printf("Time spent loading the nodes: %d ns\n", (uint64_t)ld_cycles);
