@@ -454,6 +454,16 @@ int profile(unsigned int seed, int hw, int samples)
     printf("Total:\n");
     print_stats(&total);
 
+    prof prof;
+    prof.prproc = (uint64_t) prproc.avg;
+    prof.tx = (uint64_t) tx.avg;
+    prof.exec = (uint64_t) exec.avg;
+    prof.rx = (uint64_t) rx.avg;
+    prof.poproc = (uint64_t) poproc.avg;
+    printf("\nAverage:\n");
+    prof_print(&prof);
+
+
     if (hw) {
         mem_dtor(&mem_bram);
         mem_dtor(&mem_dkstr);
