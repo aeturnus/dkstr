@@ -11,8 +11,10 @@ LD = ld
 AR = ar
 
 OPT=-O3
-CFLAGS = -Wall -Wextra -Wno-unused-parameter -std=gnu99 -g -pg $(OPT)
-LIBS   = -L$(LIBDIR) -lmem -lbtn -lncurses
+CFLAGS = -Wall -Wextra -Wno-unused-parameter -std=gnu99 $(OPT)
+#CFLAGS += -g
+#CFLAGS += -pg
+LIBS   = -L$(LIBDIR) -lmem -lbtn -lncurses -lm
 INCLUDE = -I$(PROOT)/inc -I$(EXTDIR)/libmem/inc -I$(EXTDIR)/libbtn/inc
 
 LIB_DEPEND = $(LIBDIR)/libmem.a $(LIBDIR)/libbtn.a
@@ -57,6 +59,12 @@ test: $(BINDIR)/$(BIN)
 debug: $(BINDIR)/$(BIN)
 	gdb $(BINDIR)/$(BIN)
 
+profile_hw: $(BINDIR)/$(BIN)
+	sudo $(BINDIR)/$(BIN) profile hw 10000
+
+profile_sw: $(BINDIR)/$(BIN)
+	sudo $(BINDIR)/$(BIN) profile sw 10000
+
 clean:
 	@#rm -rf cscope
 	rm -rf $(BINDIR)
@@ -64,4 +72,4 @@ clean:
 	rm -rf $(LIBDIR)
 	+$(MAKE) clean -C external/libmem
 
-.PHONY: all clean test debug
+.PHONY: all clean test debug profile_hw profile_sw
