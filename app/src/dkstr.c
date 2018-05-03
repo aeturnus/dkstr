@@ -193,6 +193,28 @@ int put_map(const char * map_path)
     return 0;
 }
 
+int dump_map(const char * map_path)
+{
+    map map;
+    map_load(&map, map_path);
+
+    int buff_n = 0;
+    buff_n = (map.w * map.h) / 8;
+    if ((map.w * map.h) % 8 != 0)
+        buff_n += 1; // compensate if not aligned
+
+    uint32_t * map_buffer = (uint32_t *) malloc(sizeof(uint32_t) * buff_n);
+
+    convert_map(&map, map_buffer);
+    for (int i = 0; i < buff_n; ++i) {
+        printf("%08x\n", map_buffer[i]);
+    }
+
+    map_dtor(&map);
+    free(map_buffer);
+    return 0;
+}
+
 int put_path(const char * path_path)
 {
     mem_context mem_bram;
@@ -680,6 +702,13 @@ int main(int argc, char * argv[])
             return 1;
         }
         return put_map(argv[2]);
+    }
+    else if (!strcmp("dump_map", argv[1])) {
+        if (argc <= 2) {
+            fprintf(stderr, "ERROR: dkstr dump_map <map path>\n");
+            return 1;
+        }
+        return dump_map(argv[2]);
     }
     else if (!strcmp("put_path", argv[1])) {
         if (argc <= 2) {

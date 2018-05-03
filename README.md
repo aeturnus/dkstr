@@ -16,6 +16,7 @@ There are several commands the program runs. For their arguments,
 run the command with no other arguments to see a printout of the arguments.
 
 `put_map`: places a map file's weights into BRAM
+`dump_map`: prints out a map file as a hex dump. You can use to as an input for the Icarus Verilog simulation in `app/source`.
 `put_path`: places a path's information into BRAM (no start coordinates at the beginning)
 `print_path`: prints the path information in a visual manner. An example is under `app/maps/test1.path`
 `play`: runs a pathfinding algorithm for a given map, with a selectable SW or HW implementation. An example map is provided under `app/maps/test1.map`.
@@ -45,6 +46,8 @@ physical implementaion.
 The example application can also playback a given `paths.hex` file.
 
 Dependencies: iverilog
+
+Invoke `make test_fabric.iver`.
 
 Not advised to run this simulation on the ZedBoard.
 
