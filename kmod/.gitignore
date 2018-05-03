@@ -1,0 +1,9 @@
+.skeleton*
+*.cmd
+*.o
+*.ko
+*.symvers
+.*.cmd
+.tmp_versions
+*.mod.c
+*.order
