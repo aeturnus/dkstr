@@ -12,9 +12,16 @@ To compile with interrupts enabled, uncomment the line in
 
 Run make to compile it.
 
-There are several commands the program runs.
+There are several commands the program runs. For their arguments,
+run the command with no other arguments to see a printout of the arguments.
 
-
+`put_map`: places a map file's weights into BRAM
+`put_path`: places a path's information into BRAM (no start coordinates at the beginning)
+`print_path`: prints the path information in a visual manner. An example is under `app/maps/test1.path`
+`play`: runs a pathfinding algorithm for a given map, with a selectable SW or HW implementation. An example map is provided under `app/maps/test1.map`.
+`playback`: plays a paths file that contains the starting coordinates at the beginning of the file. An example is provided under `app/paths/paths.hex` (this is `test1.path` except with starting coordinates at the beginning).
+`rand`: generates a random map and works like `play`
+`profile`: profiles a given implementation, printing out stats
 
 ### kmod/
 Kernel module code to expose the interrupt to user code.
