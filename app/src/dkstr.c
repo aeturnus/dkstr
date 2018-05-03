@@ -96,7 +96,7 @@ void convert_map(const map * map, uint32_t * buffer)
     }
 }
 
-int dump_map(const char * map_path)
+int put_map(const char * map_path)
 {
     mem_context mem_bram;
     mem_ctor(&mem_bram, MEM_MMAP, 1, (void*)(uintptr_t) 0x40000000, (void*)(uintptr_t) 0x40000fff);
@@ -112,7 +112,7 @@ int dump_map(const char * map_path)
     return 0;
 }
 
-int dump_path(const char * path_path)
+int put_path(const char * path_path)
 {
     mem_context mem_bram;
     mem_ctor(&mem_bram, MEM_MMAP, 1, (void*)(uintptr_t) 0x40001000, (void*)(uintptr_t) 0x40001fff);
@@ -127,6 +127,52 @@ int dump_path(const char * path_path)
     fclose(file);
 
     mem_dtor(&mem_bram);
+    return 0;
+}
+
+int print_path(int w, int h)
+{
+    mem_context mem_bram;
+    mem_ctor(&mem_bram, MEM_MMAP, 1, (void*)(uintptr_t) 0x40001000, (void*)(uintptr_t) 0x40001fff);
+    uint32_t * bram = mem_addr(&mem_bram, (void*)(uintptr_t) 0x40001000);
+
+    static const char char_dirs[8] =
+    {
+        '^',
+        '/',
+        '>',
+        '\\',
+        'v',
+        ',',
+        '<',
+        '`'
+    };
+
+    uint32_t val = 0;
+    uint8_t count = 0;
+    for (int r = 0; r < h; ++r) {
+        for (int c = 0; c < w; ++c) {
+            if (count == 0) {
+                val = *bram;
+                ++bram;
+            }
+
+            uint8_t dir = val & 0xF;
+            if (dir & 0x8) {
+                dir &= 0x7;
+                putchar(char_dirs[dir]);
+            }
+            else {
+                printf(" ");
+            }
+            val >>= 4;
+            count = (count + 1) % 8;
+        }
+        printf("\n");
+    }
+
+    mem_dtor(&mem_bram);
+    return 0;
 }
 
 // gets the 4-bit dir code from a buffer
@@ -484,19 +530,29 @@ int main(int argc, char * argv[])
         return 1;
     }
 
-    if (!strcmp("dump", argv[1])) {
+    if (!strcmp("put_map", argv[1])) {
         if (argc <= 2) {
-            fprintf(stderr, "ERROR: dkstr dump <map path>\n");
+            fprintf(stderr, "ERROR: dkstr put_map <map path>\n");
             return 1;
         }
-        return dump_map(argv[2]);
+        return put_map(argv[2]);
     }
-    else if (!strcmp("dump_path", argv[1])) {
+    else if (!strcmp("put_path", argv[1])) {
         if (argc <= 2) {
-            fprintf(stderr, "ERROR: dkstr dump <path hexdump path>\n");
+            fprintf(stderr, "ERROR: dkstr put_path <path hexdump path>\n");
             return 1;
         }
-        return dump_path(argv[2]);
+        return put_path(argv[2]);
+    }
+    else if (!strcmp("print_path", argv[1])) {
+        if (argc <= 3) {
+            fprintf(stderr, "ERROR: dkstr print_path <width> <height>\n");
+            return 1;
+        }
+        int w, h;
+        sscanf(argv[2], "%d", &w);
+        sscanf(argv[3], "%d", &h);
+        return print_path(w,h);
     }
     // dkstr play <map_path> <start_x> <start_y> <end_x> <end_y> [sw,hw; default sw]
     else if (!strcmp("play", argv[1])) {
